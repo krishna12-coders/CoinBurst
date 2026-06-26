@@ -85,7 +85,7 @@ export const AddTransactionWeb: React.FC<{
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -99,7 +99,7 @@ export const AddTransactionWeb: React.FC<{
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 30, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className={`relative z-10 w-full max-w-lg p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} overflow-hidden`}
+            className={`relative z-10 w-full max-w-lg my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow} overflow-hidden`}
           >
             {/* Decorative glows */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#00FF88]/5 rounded-full blur-3xl pointer-events-none" />

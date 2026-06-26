@@ -716,28 +716,39 @@ export const DashboardWeb: React.FC<{
   const [newBudgetLimit, setNewBudgetLimit] = useState('');
   const [newBudgetMonth, setNewBudgetMonth] = useState(new Date().toISOString().substring(0, 7));
 
+  // Mobile sidebar drawer state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // Welcome popup state & effect
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
-    const isWelcomeShown = sessionStorage.getItem('coinburst_welcome_shown');
-    if (!isWelcomeShown) {
+    try {
+      const isWelcomeShown = sessionStorage.getItem('coinburst_welcome_shown');
+      if (!isWelcomeShown) {
+        setShowWelcome(true);
+        setTimeout(() => {
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav'); // Boot up chime
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Welcome sound blocked:', e));
+          } catch (err) {
+            console.warn('Welcome sound failed:', err);
+          }
+        }, 500);
+      }
+    } catch (e) {
       setShowWelcome(true);
-      setTimeout(() => {
-        try {
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav'); // Boot up chime
-          audio.volume = 0.5;
-          audio.play().catch(e => console.log('Welcome sound blocked:', e));
-        } catch (err) {
-          console.warn('Welcome sound failed:', err);
-        }
-      }, 500);
     }
   }, []);
 
   const handleDismissWelcome = () => {
     setShowWelcome(false);
-    sessionStorage.setItem('coinburst_welcome_shown', 'true');
+    try {
+      sessionStorage.setItem('coinburst_welcome_shown', 'true');
+    } catch (e) {
+      console.warn('Failed to set welcome popup flag:', e);
+    }
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
       audio.volume = 0.4;
@@ -921,7 +932,7 @@ export const DashboardWeb: React.FC<{
   const dailyFlowData = getDailyFlowData();
 
   return (
-    <div className={`min-h-screen w-full ${cStyles.bg} font-sans transition-colors duration-500 flex relative overflow-hidden`}>
+    <div className={`min-h-screen w-full ${cStyles.bg} font-sans transition-colors duration-500 flex flex-col md:flex-row relative overflow-hidden`}>
       {/* ── Background Theme Animations ──────────────────────────────── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {theme === 'cyberpunk' && (
@@ -1024,20 +1035,47 @@ export const DashboardWeb: React.FC<{
         )}
       </div>
 
-      {/* 1. Multipage Navigation Sidebar */}
-      <aside className={`w-64 border-r ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} flex flex-col justify-between ${cStyles.cardBg} relative z-10`}>
+      {/* Mobile Sidebar Drawer Backdrop */}
+      {isMobileSidebarOpen && (
+        <div 
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden cursor-pointer"
+        />
+      )}
+
+      {/* 1. Multipage Navigation Sidebar Drawer */}
+      <aside className={`
+        fixed top-0 bottom-0 left-0 z-50 w-64 border-r
+        ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'}
+        flex flex-col justify-between ${cStyles.cardBg}
+        transition-transform duration-300 ease-in-out
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0 md:static md:z-10 md:h-screen
+      `}>
         <div>
-          {/* Brand Logo */}
-          <div className="p-6 border-b border-gray-800/50 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse">
-              <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
-                <span className="font-['Poppins'] font-black text-xl text-white">CB</span>
+          {/* Brand Logo & Close Button */}
+          <div className="p-6 border-b border-gray-800/50 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse">
+                <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
+                  <span className="font-['Poppins'] font-black text-xl text-white">CB</span>
+                </div>
+              </div>
+              <div>
+                <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>
+                <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase">Wealth Hub</span>
               </div>
             </div>
-            <div>
-              <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>
-              <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase">Wealth Hub</span>
-            </div>
+            {/* Close sidebar button on mobile */}
+            <button 
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="p-1 rounded-lg text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 md:hidden cursor-pointer"
+              aria-label="Close navigation menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
 
           {/* Navigation Links */}
@@ -1054,7 +1092,10 @@ export const DashboardWeb: React.FC<{
               return (
                 <button
                   key={item.id}
-                  onClick={() => onNavigate(item.id as any)}
+                  onClick={() => {
+                    onNavigate(item.id as any);
+                    setIsMobileSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                     isActive ? cStyles.navActive : cStyles.navInactive
                   }`}
@@ -1094,8 +1135,38 @@ export const DashboardWeb: React.FC<{
         </div>
       </aside>
 
+      {/* Mobile Top Navigation Bar */}
+      <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} ${cStyles.cardBg} sticky top-0 z-20 w-full`}>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white cursor-pointer"
+            aria-label="Open navigation menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px]">
+              <div className="w-full h-full bg-[#0B0B0F] rounded-lg flex items-center justify-center">
+                <span className="font-['Poppins'] font-black text-sm text-white">CB</span>
+              </div>
+            </div>
+            <span className="font-['Poppins'] font-black text-sm tracking-wider text-white">COINBURST</span>
+          </div>
+        </div>
+
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${cStyles.headerAccent}`}>
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Net:</span>
+          <span className="text-sm font-mono font-black text-emerald-400">
+            {fmt(totalBalance)}
+          </span>
+        </div>
+      </div>
+
       {/* Main Content Pane */}
-      <main className="flex-1 p-8 overflow-y-auto w-full relative z-10">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full relative z-10">
         {/* Header Banner */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
@@ -1796,13 +1867,13 @@ export const DashboardWeb: React.FC<{
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+            className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className={`max-w-md w-full p-8 rounded-3xl text-center ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden border border-white/10`}
+              className={`max-w-md w-full my-auto p-6 sm:p-8 rounded-3xl text-center ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden border border-white/10`}
             >
               {/* Decorative background glows */}
               <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#FF007F]/10 rounded-full blur-3xl" />
@@ -1854,7 +1925,7 @@ export const DashboardWeb: React.FC<{
       {/* ── Add Account Modal ─────────────────────────────────────────── */}
       <AnimatePresence>
         {showAddAccount && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowAddAccount(false)}
@@ -1865,7 +1936,7 @@ export const DashboardWeb: React.FC<{
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 30, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className={`relative z-10 w-full max-w-md p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-black">Add Wallet Node</h3>
@@ -1929,7 +2000,7 @@ export const DashboardWeb: React.FC<{
       {/* ── Add Budget Modal ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAddBudget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowAddBudget(false)}
@@ -1940,7 +2011,7 @@ export const DashboardWeb: React.FC<{
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.9, y: 30, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className={`relative z-10 w-full max-w-md p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+              className={`relative z-10 w-full max-w-md my-auto p-6 sm:p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-black">Set Budget Limit</h3>

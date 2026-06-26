@@ -89,7 +89,7 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* Main Hero & Auth Portal */}
-      <main className="max-w-7xl w-full mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10 flex-1">
+      <main className="max-w-7xl w-full mx-auto px-6 py-12 flex flex-col lg:grid lg:grid-cols-12 gap-12 items-center relative z-10 flex-1">
         {/* Left Hand: Features & Marketing Pitch */}
         <div className="lg:col-span-7 space-y-8 text-left">
           <motion.div
