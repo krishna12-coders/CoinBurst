@@ -1,0 +1,30 @@
+# Dependencies
+**/node_modules/
+node_modules/
+
+# Production/Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.expo/
+*.apk
+*.ipa
+
+# Firebase state
+.firebase/
+
+# Local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Logs and system files
+*.log
+logs/
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db

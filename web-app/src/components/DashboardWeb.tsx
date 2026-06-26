@@ -1,0 +1,1989 @@
+import React, { useState, useEffect } from 'react';
+import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
+import type { ThemeType } from '../shared/useFinanceStore';
+import { signOutUser } from '../shared/firebase';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar
+} from 'recharts';
+import { 
+  Plus, Trash2, ArrowUpRight, ArrowDownRight, Settings, 
+  TrendingUp, PiggyBank, BarChart3, LogOut, Bot, Download, Sparkles
+} from 'lucide-react';
+
+// --- Theme Helper Hooks ---
+export const useThemeStyles = () => {
+  const theme = useFinanceStore((state) => state.theme);
+  
+  const styles = {
+    dark: {
+      bg: 'bg-[#000000] text-[#FFFFFF]',
+      cardBg: 'bg-[#0B0B0F] border border-[#1E1E26]',
+      textMuted: 'text-[#9CA3AF]',
+      textNormal: 'text-[#FFFFFF]',
+      accent: 'text-[#00FF88]',
+      accentBg: 'bg-[#00FF88]/10',
+      accentPink: 'text-[#FF007F]',
+      primaryBtn: 'bg-[#00FF88] text-[#000000] hover:shadow-[0_0_20px_rgba(0,255,136,0.5)] font-bold transition-all duration-300 cursor-pointer',
+      primaryBtnOutline: 'border border-[#00FF88] text-[#00FF88] hover:bg-[#00FF88]/10 font-bold transition-all duration-300 cursor-pointer',
+      input: 'bg-[#0B0B0F] border border-[#1E1E26] focus:border-[#00FF88] text-white',
+      shadow: 'shadow-[0_4px_20px_rgba(0,0,0,0.8)]',
+      gradientBorder: 'hover:border-[#00FF88]/50 transition-all duration-300',
+      navActive: 'bg-[#00FF88]/10 text-[#00FF88] border-r-4 border-[#00FF88]',
+      navInactive: 'text-[#9CA3AF] hover:text-white hover:bg-white/5',
+      chartColors: ['#00FF88', '#00E5FF', '#FF007F', '#A855F7'],
+      gridColor: '#1E1E26',
+      walletBtnUnselected: 'bg-black/40 text-gray-400 border-gray-800 hover:border-gray-600',
+      walletBtnAllSelected: 'bg-white text-black border-white',
+      headerAccent: 'bg-black/20 border-gray-800/40',
+      ledgerFeedBg: 'bg-black/20 hover:bg-black/40 border border-gray-800/40',
+      dialogHeaderBg: 'bg-black/40 border border-gray-800/40',
+      tabInactive: 'text-gray-400 hover:text-white',
+      closeBtn: 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10',
+      selectOptionBg: 'bg-[#0B0B0F] text-white',
+      badgeBg: 'bg-gray-800 text-gray-300',
+      cardAccentBg: 'bg-black/10 border border-gray-800/40',
+      settingsBtnSelected: 'border-[#00FF88] bg-[#00FF88]/5 shadow-lg shadow-[#00FF88]/10',
+      settingsBtnUnselected: 'border-gray-800 hover:border-gray-700 bg-black/20',
+    },
+    light: {
+      bg: 'bg-[#F3F4F6] text-[#1F2937]',
+      cardBg: 'bg-[#FFFFFF] border border-[#E5E7EB] shadow-sm',
+      textMuted: 'text-[#6B7280]',
+      textNormal: 'text-[#1F2937]',
+      accent: 'text-[#10B981]',
+      accentBg: 'bg-[#10B981]/10',
+      accentPink: 'text-[#F43F5E]',
+      primaryBtn: 'bg-[#10B981] text-white hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] font-bold transition-all duration-300 cursor-pointer',
+      primaryBtnOutline: 'border border-[#10B981] text-[#10B981] hover:bg-[#10B981]/10 font-bold transition-all duration-300 cursor-pointer',
+      input: 'bg-white border border-[#D1D5DB] focus:border-[#10B981] text-gray-900',
+      shadow: 'shadow-[0_4px_12px_rgba(0,0,0,0.05)]',
+      gradientBorder: 'hover:border-[#10B981]/50 transition-all duration-300',
+      navActive: 'bg-[#10B981]/10 text-[#10B981] border-r-4 border-[#10B981]',
+      navInactive: 'text-[#6B7280] hover:text-gray-900 hover:bg-gray-100',
+      chartColors: ['#10B981', '#3B82F6', '#F43F5E', '#8B5CF6'],
+      gridColor: '#E5E7EB',
+      walletBtnUnselected: 'bg-white text-gray-500 border-gray-200 hover:border-gray-300',
+      walletBtnAllSelected: 'bg-gray-900 text-white border-gray-900',
+      headerAccent: 'bg-white border border-gray-200',
+      ledgerFeedBg: 'bg-white hover:bg-gray-50 border border-gray-200',
+      dialogHeaderBg: 'bg-gray-100 border border-gray-200',
+      tabInactive: 'text-gray-500 hover:text-gray-900',
+      closeBtn: 'text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200',
+      selectOptionBg: 'bg-white text-gray-900',
+      badgeBg: 'bg-gray-100 text-gray-600',
+      cardAccentBg: 'bg-gray-50 border border-gray-200',
+      settingsBtnSelected: 'border-[#10B981] bg-[#10B981]/5 shadow-md shadow-[#10B981]/10',
+      settingsBtnUnselected: 'border-gray-200 hover:border-gray-300 bg-white',
+    },
+    cyberpunk: {
+      bg: 'bg-[#12042C] text-[#FFE600]',
+      cardBg: 'bg-[#1F0E3D] border-2 border-[#FF007F] shadow-[0_0_15px_rgba(255,0,127,0.2)]',
+      textMuted: 'text-[#A8A29E] text-opacity-90',
+      textNormal: 'text-[#FFE600]',
+      accent: 'text-[#FFE600]',
+      accentBg: 'bg-[#FFE600]/10',
+      accentPink: 'text-[#FF007F]',
+      primaryBtn: 'bg-[#FFE600] text-[#12042C] font-black uppercase tracking-wider hover:shadow-[0_0_20px_rgba(255,230,0,0.6)] border-2 border-[#FFE600] transition-all duration-300 cursor-pointer',
+      primaryBtnOutline: 'border-2 border-[#FF007F] text-[#FF007F] hover:bg-[#FF007F]/15 font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer',
+      input: 'bg-[#12042C] border-2 border-[#FF007F] focus:border-[#FFE600] text-[#FFE600] font-mono',
+      shadow: 'shadow-[0_0_25px_rgba(255,0,127,0.35)]',
+      gradientBorder: 'hover:border-[#FFE600] hover:shadow-[0_0_20px_rgba(255,0,127,0.5)] transition-all duration-300',
+      navActive: 'bg-[#FF007F]/20 text-[#FFE600] border-r-4 border-[#FFE600] shadow-[inset_0_0_10px_rgba(255,0,127,0.3)]',
+      navInactive: 'text-[#FF007F] hover:text-[#FFE600] hover:bg-[#FF007F]/10',
+      chartColors: ['#FFE600', '#FF007F', '#39FF14', '#00E5FF'],
+      gridColor: 'rgba(255, 0, 127, 0.2)',
+      walletBtnUnselected: 'bg-[#1F0E3D] text-[#FF007F] border-[#FF007F]/40 hover:border-[#FF007F]',
+      walletBtnAllSelected: 'bg-[#FFE600] text-[#12042C] border-[#FFE600]',
+      headerAccent: 'bg-[#1F0E3D] border border-[#FF007F]/40',
+      ledgerFeedBg: 'bg-[#1F0E3D]/50 hover:bg-[#1F0E3D] border border-[#FF007F]/30',
+      dialogHeaderBg: 'bg-[#12042C] border border-[#FF007F]/40',
+      tabInactive: 'text-[#FF007F] hover:text-[#FFE600]',
+      closeBtn: 'text-[#FF007F] hover:text-[#FFE600] bg-[#FF007F]/10 hover:bg-[#FF007F]/20',
+      selectOptionBg: 'bg-[#1F0E3D] text-[#FFE600]',
+      badgeBg: 'bg-[#FF007F]/20 text-[#FF007F]',
+      cardAccentBg: 'bg-[#1F0E3D] border border-[#FF007F]/30',
+      settingsBtnSelected: 'border-[#FFE600] bg-[#FFE600]/5 shadow-lg shadow-[#FFE600]/10',
+      settingsBtnUnselected: 'border-[#FF007F]/50 hover:border-[#FF007F] bg-[#1F0E3D]',
+    },
+    glass: {
+      bg: 'bg-gradient-to-br from-[#0F0C20] via-[#151030] to-[#25103F] text-white',
+      cardBg: 'bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.2)]',
+      textMuted: 'text-[#D1D5DB]/70',
+      textNormal: 'text-white',
+      accent: 'text-[#00F0FF]',
+      accentBg: 'bg-[#00F0FF]/10',
+      accentPink: 'text-[#FF007F]',
+      primaryBtn: 'bg-gradient-to-r from-[#FF007F] to-[#7B2CBF] text-white font-bold hover:shadow-[0_0_15px_rgba(255,0,127,0.5)] transition-all duration-300 border border-white/10 cursor-pointer',
+      primaryBtnOutline: 'border border-[#00F0FF] text-[#00F0FF] hover:bg-[#00F0FF]/10 font-bold transition-all duration-300 cursor-pointer',
+      input: 'bg-white/5 backdrop-blur-md border border-white/10 focus:border-[#00F0FF] text-white',
+      shadow: 'shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]',
+      gradientBorder: 'hover:border-[#00F0FF]/40 transition-all duration-300',
+      navActive: 'bg-white/10 text-[#00F0FF] border-r-4 border-[#00F0FF]',
+      navInactive: 'text-[#D1D5DB]/80 hover:text-white hover:bg-white/5',
+      chartColors: ['#FF007F', '#00F0FF', '#7B2CBF', '#A855F7'],
+      gridColor: 'rgba(255, 255, 255, 0.08)',
+      walletBtnUnselected: 'bg-white/5 text-gray-300 border-white/10 hover:border-white/20',
+      walletBtnAllSelected: 'bg-[#FF007F] text-white border-[#FF007F]',
+      headerAccent: 'bg-white/5 border border-white/10',
+      ledgerFeedBg: 'bg-white/5 hover:bg-white/10 border border-white/10',
+      dialogHeaderBg: 'bg-white/5 border border-white/10',
+      tabInactive: 'text-gray-400 hover:text-white',
+      closeBtn: 'text-gray-400 hover:text-white bg-white/5 hover:bg-white/10',
+      selectOptionBg: 'bg-[#151030] text-white',
+      badgeBg: 'bg-white/10 text-gray-300',
+      cardAccentBg: 'bg-white/5 border border-white/10',
+      settingsBtnSelected: 'border-[#00F0FF] bg-[#00F0FF]/5 shadow-lg shadow-[#00F0FF]/10',
+      settingsBtnUnselected: 'border-white/10 hover:border-white/20 bg-white/5',
+    },
+    forest: {
+      bg: 'bg-[#0E2015] text-[#F3F4F6]',
+      cardBg: 'bg-[#142C1E] border border-[#234F35] shadow-sm',
+      textMuted: 'text-[#85A995]',
+      textNormal: 'text-[#F3F4F6]',
+      accent: 'text-[#E5B842]',
+      accentBg: 'bg-[#E5B842]/10',
+      accentPink: 'text-[#E07A5F]',
+      primaryBtn: 'bg-[#E5B842] text-[#0E2015] font-bold hover:shadow-[0_4px_12px_rgba(229,184,66,0.3)] transition-all duration-300 cursor-pointer',
+      primaryBtnOutline: 'border border-[#E5B842] text-[#E5B842] hover:bg-[#E5B842]/10 font-bold transition-all duration-300 cursor-pointer',
+      input: 'bg-[#0E2015] border border-[#234F35] focus:border-[#E5B842] text-[#F3F4F6]',
+      shadow: 'shadow-[0_4px_12px_rgba(0,0,0,0.15)]',
+      gradientBorder: 'hover:border-[#E5B842]/50 transition-all duration-300',
+      navActive: 'bg-[#E5B842]/10 text-[#E5B842] border-r-4 border-[#E5B842]',
+      navInactive: 'text-[#85A995] hover:text-[#F3F4F6] hover:bg-white/5',
+      chartColors: ['#E5B842', '#3D5A80', '#E07A5F', '#81B29A'],
+      gridColor: '#234F35',
+      walletBtnUnselected: 'bg-[#142C1E] text-[#85A995] border-[#234F35] hover:border-[#E5B842]/40',
+      walletBtnAllSelected: 'bg-[#E5B842] text-[#0E2015] border-[#E5B842]',
+      headerAccent: 'bg-[#142C1E] border border-[#234F35]',
+      ledgerFeedBg: 'bg-[#142C1E] hover:bg-[#1C3D2B] border border-[#234F35]',
+      dialogHeaderBg: 'bg-[#0E2015] border border-[#234F35]',
+      tabInactive: 'text-[#85A995] hover:text-[#F3F4F6]',
+      closeBtn: 'text-[#85A995] hover:text-[#F3F4F6] bg-white/5 hover:bg-white/10',
+      selectOptionBg: 'bg-[#142C1E] text-[#F3F4F6]',
+      badgeBg: 'bg-[#0E2015] text-[#85A995]',
+      cardAccentBg: 'bg-[#142C1E] border border-[#234F35]',
+      settingsBtnSelected: 'border-[#E5B842] bg-[#E5B842]/5 shadow-md shadow-[#E5B842]/10',
+      settingsBtnUnselected: 'border-[#234F35] hover:border-gray-600 bg-[#142C1E]',
+    }
+  };
+  
+  return styles[theme] || styles.dark;
+};
+
+// --- Liquid SVG Progress Bar Component ---
+export const LiquidProgressBar: React.FC<{ spent: number; limit: number }> = ({ spent, limit }) => {
+  const percentage = Math.min(100, Math.max(0, (spent / limit) * 100));
+  const currency = useFinanceStore((state) => state.currency);
+  const def = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
+  
+  let fillColor = '#10B981';
+  let glowColor = 'rgba(16, 185, 129, 0.4)';
+  if (percentage >= 100) {
+    fillColor = '#EF4444';
+    glowColor = 'rgba(239, 68, 68, 0.6)';
+  } else if (percentage >= 80) {
+    fillColor = '#F59E0B';
+    glowColor = 'rgba(245, 158, 11, 0.5)';
+  }
+
+  const waveY = 100 - (percentage * 0.9);
+
+  return (
+    <div className="relative w-44 h-44 rounded-full overflow-hidden border-4 border-gray-700/50 flex items-center justify-center bg-gray-900/40 shadow-inner">
+      <svg 
+        viewBox="0 0 100 100" 
+        className="absolute inset-0 w-full h-full"
+        style={{ filter: `drop-shadow(0 0 8px ${glowColor})` }}
+      >
+        <motion.path
+          d={`M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`}
+          fill={fillColor}
+          animate={{
+            d: [
+              `M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`,
+              `M 0,${waveY} Q 25,${waveY + 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`,
+              `M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`
+            ]
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 4,
+            ease: "easeInOut"
+          }}
+        />
+      </svg>
+      
+      <div className="relative z-10 text-center select-none">
+        <span className="text-3xl font-black text-white font-mono">
+          {percentage.toFixed(0)}%
+        </span>
+        <div className="text-[10px] text-gray-200 uppercase tracking-widest font-bold drop-shadow-md">
+          Spent
+        </div>
+        <div className="text-[11px] text-white/80 font-mono mt-1">
+          {def.symbol}{spent.toFixed(0)} / {def.symbol}{limit.toFixed(0)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Sound effect player for theme changes
+const playThemeSound = (themeId: string) => {
+  try {
+    const audioUrls = {
+      dark: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav', // Cyber click
+      light: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav', // Soft pop
+      cyberpunk: 'https://assets.mixkit.co/active_storage/sfx/1072/1072-84.wav', // Retro laser
+      glass: 'https://assets.mixkit.co/active_storage/sfx/911/911-84.wav', // Synth chime
+      forest: 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav' // Wood block nature chime
+    };
+    const url = audioUrls[themeId as keyof typeof audioUrls];
+    if (url) {
+      const audio = new Audio(url);
+      audio.volume = 0.4;
+      audio.play().catch(e => console.log('Audio playback blocked or failed:', e));
+    }
+  } catch (err) {
+    console.warn('Audio playback failed:', err);
+  }
+};
+
+// CSV Statement Exporter (Downloads)
+const downloadStatement = (transactions: any[], accounts: any[]) => {
+  try {
+    const headers = ['Transaction ID', 'Date', 'Description', 'Type', 'Category', 'Amount', 'Account Name'];
+    const rows = transactions.map(t => {
+      const acc = accounts.find(a => a.id === t.accountId);
+      return [
+        t.id,
+        new Date(t.date).toLocaleString(),
+        `"${t.description.replace(/"/g, '""')}"`,
+        t.type,
+        t.category,
+        t.amount,
+        acc ? `"${acc.name.replace(/"/g, '""')}"` : 'Unknown'
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(e => e.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const dateStr = new Date().toISOString().substring(0, 10);
+    link.setAttribute('download', `CoinBurst_Statement_${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error("Statement download failed:", err);
+  }
+};
+
+// ── AI Command-Action Engine ────────────────────────────────────────────────
+// Returns a text reply AND an optional action thunk that mutates the store.
+type AIResult = { text: string; action?: () => void };
+
+const generateAIResponse = (
+  message: string,
+  state: { accounts: any[]; transactions: any[]; budgets: any[] },
+  currency: string,
+  store: {
+    addTransaction: (t: any) => any;
+    deleteTransaction: (id: string) => void;
+    addAccount: (a: any) => void;
+    deleteAccount: (id: string) => void;
+    addBudget: (b: any) => void;
+    deleteBudget: (id: string) => void;
+    setTheme: (t: any) => void;
+    setCurrency: (c: string) => void;
+    onNavigate: (p: any) => void;
+  }
+): AIResult => {
+  const raw = message.trim();
+  const q = raw.toLowerCase();
+  const fmtAI = (amount: number) => formatCurrency(amount, currency);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const totalBalance = state.accounts.reduce((s, a) => s + a.balance, 0);
+  const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const netSavings = totalIncome - totalExpense;
+
+  // Parse a monetary amount from a string, e.g. "500", "₹1000", "$50.5"
+  const parseAmount = (str: string): number | null => {
+    const m = str.match(/[\d,]+(\.\d+)?/);
+    if (!m) return null;
+    return parseFloat(m[0].replace(/,/g, ''));
+  };
+
+  // ── ADD TRANSACTION ───────────────────────────────────────────────────────
+  // Patterns: "add expense 500 food", "log income 5000 salary", "record spend 200 shopping"
+  const addTxPattern = /\b(add|log|record|create|new)\b.*(expense|income|spend|spent|earning|salary|payment|purchase|buy)/i;
+  if (addTxPattern.test(q)) {
+    const type: 'income' | 'expense' = /\b(income|salary|earning|revenue|credit)\b/.test(q) ? 'income' : 'expense';
+    const amount = parseAmount(raw);
+    if (!amount) return { text: `I need an amount to log the ${type}. Try: *"add expense 500 Food"*` };
+
+    // Extract category — word after amount, or last meaningful word
+    const words = raw.split(/\s+/);
+    const amtIdx = words.findIndex(w => /[\d,]/.test(w));
+    const category = amtIdx >= 0 && words[amtIdx + 1]
+      ? words.slice(amtIdx + 1).join(' ').replace(/[^a-zA-Z\s]/g, '').trim() || 'General'
+      : 'General';
+
+    // Use the first account, or a fallback ID
+    const targetAccount = state.accounts[0];
+    if (!targetAccount) {
+      return { text: `⚠️ You need at least one account before logging a transaction. Say *"create account Cash Wallet"* to add one first.` };
+    }
+
+    const newTx = {
+      accountId: targetAccount.id,
+      type,
+      category: category.charAt(0).toUpperCase() + category.slice(1),
+      amount,
+      description: raw,
+      date: new Date().toISOString(),
+    };
+
+    return {
+      text: `✅ **Logged!** ${type === 'expense' ? '💸 Expense' : '💰 Income'} of **${fmtAI(amount)}** under **${newTx.category}** added to *${targetAccount.name}*.`,
+      action: () => store.addTransaction(newTx),
+    };
+  }
+
+  // ── DELETE LAST TRANSACTION ───────────────────────────────────────────────
+  const delTxPattern = /\b(delete|remove|undo|cancel)\b.*(transaction|tx|last|recent|entry)/i;
+  if (delTxPattern.test(q)) {
+    const last = state.transactions[0]; // newest first
+    if (!last) return { text: `No transactions found to delete.` };
+    return {
+      text: `🗑️ Deleted last transaction: **${last.description || last.category}** (${fmtAI(last.amount)}).`,
+      action: () => store.deleteTransaction(last.id),
+    };
+  }
+
+  // ── ADD ACCOUNT ───────────────────────────────────────────────────────────
+  // Patterns: "create account savings", "add wallet HDFC Bank", "new bank account"
+  const addAccPattern = /\b(add|create|new|open)\b.*(account|wallet|vault|bank|cash|credit)/i;
+  if (addAccPattern.test(q)) {
+    // Detect type
+    const accType: 'cash' | 'bank' | 'credit' =
+      /\bcredit\b/.test(q) ? 'credit' :
+      /\bcash\b/.test(q) ? 'cash' : 'bank';
+
+    // Name = everything after "account/wallet/vault" keyword, or first quoted word
+    const nameMatch = raw.match(/(?:account|wallet|vault|bank|cash|credit)\s+(.+)/i);
+    const name = nameMatch ? nameMatch[1].trim() : `${accType.charAt(0).toUpperCase() + accType.slice(1)} Account`;
+
+    // Starting balance
+    const balance = parseAmount(raw) || 0;
+
+    const colors = ['#10B981', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const color = colors[state.accounts.length % colors.length];
+
+    return {
+      text: `✅ **Created!** New ${accType} account *"${name}"* with balance **${fmtAI(balance)}**.`,
+      action: () => store.addAccount({ name, type: accType, balance, color }),
+    };
+  }
+
+  // ── DELETE ACCOUNT ────────────────────────────────────────────────────────
+  const delAccPattern = /\b(delete|remove|close)\b.*(account|wallet|vault)/i;
+  if (delAccPattern.test(q)) {
+    if (state.accounts.length === 0) return { text: `No accounts to delete.` };
+    // Try to find by name match, else use last
+    const nameHint = raw.replace(/delete|remove|close|account|wallet|vault/gi, '').trim();
+    const target = state.accounts.find(a => a.name.toLowerCase().includes(nameHint.toLowerCase())) || state.accounts[state.accounts.length - 1];
+    return {
+      text: `🗑️ Deleted account **${target.name}** and all its transactions.`,
+      action: () => store.deleteAccount(target.id),
+    };
+  }
+
+  // ── ADD BUDGET ────────────────────────────────────────────────────────────
+  // Patterns: "set budget 2000 for food", "create budget 5000 shopping june"
+  const addBudPattern = /\b(set|add|create|new)\b.*(budget|limit|cap)/i;
+  if (addBudPattern.test(q)) {
+    const amount = parseAmount(raw);
+    if (!amount) return { text: `I need an amount to create a budget. Try: *"set budget 3000 Food"*` };
+
+    // Category: word after amount or after "for"
+    const forMatch = raw.match(/\bfor\s+([a-zA-Z\s]+)/i);
+    const words = raw.split(/\s+/);
+    const amtIdx = words.findIndex(w => /[\d,]/.test(w));
+    let category = forMatch
+      ? forMatch[1].trim()
+      : amtIdx >= 0 && words[amtIdx + 1]
+        ? words[amtIdx + 1]
+        : 'General';
+    category = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+    // Month: try to parse, default to current
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    return {
+      text: `✅ **Budget set!** **${fmtAI(amount)}** limit for **${category}** in ${month}.`,
+      action: () => store.addBudget({ category, limit: amount, month }),
+    };
+  }
+
+  // ── DELETE BUDGET ─────────────────────────────────────────────────────────
+  const delBudPattern = /\b(delete|remove|cancel)\b.*(budget|limit)/i;
+  if (delBudPattern.test(q)) {
+    if (state.budgets.length === 0) return { text: `No budgets to delete.` };
+    const nameHint = raw.replace(/delete|remove|cancel|budget|limit/gi, '').trim();
+    const target = state.budgets.find(b => b.category.toLowerCase().includes(nameHint.toLowerCase())) || state.budgets[state.budgets.length - 1];
+    return {
+      text: `🗑️ Deleted **${target.category}** budget (${fmtAI(target.limit)} limit).`,
+      action: () => store.deleteBudget(target.id),
+    };
+  }
+
+  // ── NAVIGATE ──────────────────────────────────────────────────────────────
+  const navMap: Record<string, string> = {
+    dashboard: 'dashboard', home: 'dashboard', overview: 'dashboard',
+    transaction: 'transactions', transactions: 'transactions', ledger: 'transactions',
+    budget: 'budgets', budgets: 'budgets', limits: 'budgets',
+    setting: 'settings', settings: 'settings', profile: 'settings',
+    ai: 'ai', advisor: 'ai', chat: 'ai',
+  };
+  const navMatch = Object.keys(navMap).find(k => q.includes(k) && /\b(go|open|navigate|show|take me|switch)\b/.test(q));
+  if (navMatch) {
+    const page = navMap[navMatch];
+    return {
+      text: `📍 Navigating to **${page.charAt(0).toUpperCase() + page.slice(1)}**...`,
+      action: () => store.onNavigate(page as any),
+    };
+  }
+
+  // ── SWITCH THEME ──────────────────────────────────────────────────────────
+  const themeMap: Record<string, string> = {
+    dark: 'dark', night: 'dark', black: 'dark',
+    light: 'light', white: 'light', day: 'light',
+    cyberpunk: 'cyberpunk', neon: 'cyberpunk', cyber: 'cyberpunk',
+    glass: 'glass', glassmorphism: 'glass',
+    forest: 'forest', green: 'forest', nature: 'forest',
+  };
+  if (/\b(theme|mode|appearance|look)\b/.test(q) || /\b(switch|change|set)\b.*(dark|light|cyber|glass|forest|neon|night)/.test(q)) {
+    const found = Object.keys(themeMap).find(k => q.includes(k));
+    if (found) {
+      const theme = themeMap[found];
+      return {
+        text: `🎨 Switched to **${theme.charAt(0).toUpperCase() + theme.slice(1)}** theme!`,
+        action: () => store.setTheme(theme as any),
+      };
+    }
+    return { text: `Available themes: **Dark**, **Light**, **Cyberpunk**, **Glass**, **Forest**. Say *"switch to cyberpunk theme"*.` };
+  }
+
+  // ── CHANGE CURRENCY ───────────────────────────────────────────────────────
+  const currencyKeywords = ['inr','usd','eur','gbp','jpy','aed','sgd','cad','aud','chf','rupee','dollar','euro','pound','yen','dirham'];
+  if (/\b(currency|change|set|switch)\b/.test(q) && currencyKeywords.some(k => q.includes(k))) {
+    const codeMap: Record<string, string> = {
+      inr: 'INR', rupee: 'INR', usd: 'USD', dollar: 'USD', eur: 'EUR', euro: 'EUR',
+      gbp: 'GBP', pound: 'GBP', jpy: 'JPY', yen: 'JPY', aed: 'AED', dirham: 'AED',
+      sgd: 'SGD', cad: 'CAD', aud: 'AUD', chf: 'CHF',
+    };
+    const found = currencyKeywords.find(k => q.includes(k));
+    if (found) {
+      const code = codeMap[found];
+      return {
+        text: `💱 Currency changed to **${code}**! All values will now be shown in ${code}.`,
+        action: () => store.setCurrency(code),
+      };
+    }
+  }
+
+  // ── READ-ONLY ANALYTICS ───────────────────────────────────────────────────
+  if (q.includes('budget') || q.includes('limit') || q.includes('over')) {
+    const activeBudgets = state.budgets.filter(b => b.category !== 'all');
+    if (activeBudgets.length === 0) {
+      return { text: `No active budgets found. Say *"set budget 5000 for Food"* to create one.` };
+    }
+    let response = `### 📊 Budget Status\n\n`;
+    activeBudgets.forEach(b => {
+      const pct = (b.spent / b.limit) * 100;
+      response += `- **${b.category}**: ${fmtAI(b.spent)} / ${fmtAI(b.limit)} (${pct.toFixed(0)}%)`;
+      if (pct >= 100) response += ` ⚠️ *EXCEEDED!*`;
+      else if (pct >= 80) response += ` ⚠️ *Near limit*`;
+      else response += ` ✅`;
+      response += `\n`;
+    });
+    return { text: response };
+  }
+
+  if (q.includes('spend') || q.includes('expense') || q.includes('burn') || q.includes('outflow')) {
+    if (state.transactions.length === 0) return { text: `No transactions logged yet. Say *"add expense 500 Food"* to start tracking.` };
+    const categories: Record<string, number> = {};
+    state.transactions.filter(t => t.type === 'expense').forEach(t => {
+      categories[t.category] = (categories[t.category] || 0) + t.amount;
+    });
+    let response = `### 💸 Expense Analysis\n\nTotal expenses: **${fmtAI(totalExpense)}**\n\n`;
+    Object.entries(categories).sort((a, b) => b[1] - a[1]).forEach(([cat, amt]) => {
+      response += `- **${cat}**: ${fmtAI(amt)} (${((amt / totalExpense) * 100).toFixed(1)}%)\n`;
+    });
+    return { text: response };
+  }
+
+  if (q.includes('save') || q.includes('saving') || q.includes('net') || q.includes('income') || q.includes('inflow')) {
+    let response = `### 📈 Cash Flow Summary\n\n`;
+    response += `- **Income**: +${fmtAI(totalIncome)}\n`;
+    response += `- **Expenses**: -${fmtAI(totalExpense)}\n`;
+    response += `- **Net Savings**: **${netSavings >= 0 ? '+' : ''}${fmtAI(netSavings)}**\n\n`;
+    if (totalIncome > 0) {
+      const ratio = (netSavings / totalIncome) * 100;
+      response += `Savings rate: **${ratio.toFixed(1)}%**. `;
+      if (ratio >= 50) response += `Elite performance! 🚀`;
+      else if (ratio >= 20) response += `Healthy savings pace. 👍`;
+      else if (ratio > 0) response += `Try to cut expenses to reach 20%+ savings rate.`;
+      else response += `⚠️ Spending exceeds income — deficit detected!`;
+    } else {
+      response += `Log income transactions to calculate savings rate.`;
+    }
+    return { text: response };
+  }
+
+  if (q.includes('balance') || q.includes('account') || q.includes('wallet') || q.includes('worth') || q.includes('asset')) {
+    if (state.accounts.length === 0) return { text: `No accounts yet. Say *"create account Cash Wallet"* to add one.` };
+    let response = `### 💼 Account Balances\n\nTotal net worth: **${fmtAI(totalBalance)}**\n\n`;
+    state.accounts.forEach(a => {
+      response += `- **${a.name}** (${a.type}): ${fmtAI(a.balance)}\n`;
+    });
+    return { text: response };
+  }
+
+  if (q.includes('transaction') || q.includes('recent') || q.includes('last') || q.includes('history')) {
+    if (state.transactions.length === 0) return { text: `No transactions yet. Say *"add expense 200 Food"* to log one.` };
+    const last5 = state.transactions.slice(0, 5);
+    let response = `### 📋 Recent Transactions\n\n`;
+    last5.forEach(t => {
+      response += `- ${t.type === 'income' ? '💰' : '💸'} **${t.category}** — ${fmtAI(t.amount)} *(${new Date(t.date).toLocaleDateString()})*\n`;
+    });
+    return { text: response };
+  }
+
+  // ── HELP / FALLBACK ───────────────────────────────────────────────────────
+  return {
+    text: `### 🤖 CoinBurst AI — What I Can Do\n\n**📊 Read & Analyze**\n- *"Check my budgets"* / *"Am I over budget?"*\n- *"Analyze my expenses"* / *"Show spending"*\n- *"How are my savings?"* / *"Net cash flow"*\n- *"Show account balances"* / *"Recent transactions"*\n\n**✏️ Add & Manage**\n- *"Add expense 500 Food"*\n- *"Log income 10000 Salary"*\n- *"Create account HDFC Bank"*\n- *"Set budget 3000 for Groceries"*\n\n**🗑️ Delete**\n- *"Delete last transaction"*\n- *"Remove Food budget"*\n- *"Close savings account"*\n\n**⚙️ Settings**\n- *"Switch to cyberpunk theme"*\n- *"Change currency to USD"*\n- *"Go to dashboard"* / *"Open settings"*\n\nWhat would you like to do?`
+  };
+};
+
+// ── Markdown-to-JSX Custom Renderer ──────────────────────────────────────────
+const MarkdownText: React.FC<{ text: string }> = ({ text }) => {
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1.5 font-sans">
+      {lines.map((line, lineIdx) => {
+        let currentLine = line;
+        
+        // Check if header
+        if (currentLine.startsWith('### ')) {
+          return (
+            <h4 key={lineIdx} className="text-sm font-black tracking-wide text-white mt-3 mb-1 uppercase text-opacity-90">
+              {currentLine.substring(4)}
+            </h4>
+          );
+        }
+        
+        // Check if list item
+        let isListItem = false;
+        if (currentLine.startsWith('- ')) {
+          isListItem = true;
+          currentLine = currentLine.substring(2);
+        }
+        
+        // Simple markdown parsing for bold (**) and italic (*)
+        const parts: React.ReactNode[] = [];
+        let remaining = currentLine;
+        let key = 0;
+        
+        while (remaining.length > 0) {
+          const boldIdx = remaining.indexOf('**');
+          const italicIdx = remaining.indexOf('*');
+          
+          if (boldIdx === -1 && italicIdx === -1) {
+            parts.push(<span key={key++}>{remaining}</span>);
+            break;
+          }
+          
+          if (boldIdx !== -1 && (italicIdx === -1 || boldIdx <= italicIdx)) {
+            if (boldIdx > 0) {
+              parts.push(<span key={key++}>{remaining.substring(0, boldIdx)}</span>);
+            }
+            const nextBoldIdx = remaining.indexOf('**', boldIdx + 2);
+            if (nextBoldIdx !== -1) {
+              parts.push(
+                <strong key={key++} className="font-extrabold text-emerald-400">
+                  {remaining.substring(boldIdx + 2, nextBoldIdx)}
+                </strong>
+              );
+              remaining = remaining.substring(nextBoldIdx + 2);
+            } else {
+              parts.push(<span key={key++}>{remaining.substring(boldIdx)}</span>);
+              break;
+            }
+          } else {
+            if (italicIdx > 0) {
+              parts.push(<span key={key++}>{remaining.substring(0, italicIdx)}</span>);
+            }
+            const nextItalicIdx = remaining.indexOf('*', italicIdx + 1);
+            if (nextItalicIdx !== -1) {
+              parts.push(
+                <em key={key++} className="italic text-gray-300">
+                  {remaining.substring(italicIdx + 1, nextItalicIdx)}
+                </em>
+              );
+              remaining = remaining.substring(nextItalicIdx + 1);
+            } else {
+              parts.push(<span key={key++}>{remaining.substring(italicIdx)}</span>);
+              break;
+            }
+          }
+        }
+        
+        if (isListItem) {
+          return (
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-2">
+              <span className="text-emerald-400 select-none">•</span>
+              <span className="flex-1">{parts}</span>
+            </div>
+          );
+        }
+        
+        return <p key={lineIdx} className="leading-relaxed">{parts}</p>;
+      })}
+    </div>
+  );
+};
+
+// --- Main Multipage Dashboard Web Component ---
+export const DashboardWeb: React.FC<{ 
+  onNavigate: (page: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai') => void;
+  activePage: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai';
+  onOpenForm?: () => void;
+}> = ({ onNavigate, activePage, onOpenForm }) => {
+  const cStyles = useThemeStyles();
+  const theme = useFinanceStore((state) => state.theme);
+  const setTheme = useFinanceStore((state) => state.setTheme);
+  const currency = useFinanceStore((state) => state.currency);
+  const setCurrency = useFinanceStore((state) => state.setCurrency);
+
+  // Convenience formatter for the active currency
+  const fmt = (amount: number) => formatCurrency(amount, currency);
+
+  const accounts = useFinanceStore((state) => state.accounts);
+  const transactions = useFinanceStore((state) => state.transactions);
+  const budgets = useFinanceStore((state) => state.budgets);
+  const selectedAccountId = useFinanceStore((state) => state.selectedAccountId);
+  const setSelectedAccountId = useFinanceStore((state) => state.setSelectedAccountId);
+  const addTransaction = useFinanceStore((state) => state.addTransaction);
+  const deleteTransaction = useFinanceStore((state) => state.deleteTransaction);
+  const addAccount = useFinanceStore((state) => state.addAccount);
+  const deleteAccount = useFinanceStore((state) => state.deleteAccount);
+  const addBudget = useFinanceStore((state) => state.addBudget);
+  const deleteBudget = useFinanceStore((state) => state.deleteBudget);
+
+  const user = useFinanceStore((state) => state.user);
+  const updateUserProfile = useFinanceStore((state) => state.updateUserProfile);
+
+  // Profile editing
+  const [editName, setEditName] = useState('');
+  const [editPhoto, setEditPhoto] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  // Add Account modal state
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newAccName, setNewAccName] = useState('');
+  const [newAccType, setNewAccType] = useState<'cash' | 'bank' | 'credit'>('cash');
+  const [newAccBalance, setNewAccBalance] = useState('');
+  const [newAccColor, setNewAccColor] = useState('#10B981');
+
+  // Add Budget modal state
+  const [showAddBudget, setShowAddBudget] = useState(false);
+  const [newBudgetCategory, setNewBudgetCategory] = useState('Food');
+  const [newBudgetLimit, setNewBudgetLimit] = useState('');
+  const [newBudgetMonth, setNewBudgetMonth] = useState(new Date().toISOString().substring(0, 7));
+
+  // Welcome popup state & effect
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    const isWelcomeShown = sessionStorage.getItem('coinburst_welcome_shown');
+    if (!isWelcomeShown) {
+      setShowWelcome(true);
+      setTimeout(() => {
+        try {
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav'); // Boot up chime
+          audio.volume = 0.5;
+          audio.play().catch(e => console.log('Welcome sound blocked:', e));
+        } catch (err) {
+          console.warn('Welcome sound failed:', err);
+        }
+      }, 500);
+    }
+  }, []);
+
+  const handleDismissWelcome = () => {
+    setShowWelcome(false);
+    sessionStorage.setItem('coinburst_welcome_shown', 'true');
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
+      audio.volume = 0.4;
+      audio.play().catch(e => console.log(e));
+    } catch (e) {}
+  };
+
+  // AI Advisor Chat State
+  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'ai'; text: string }>>([
+    { sender: 'ai', text: "👋 **Hey! I'm your CoinBurst AI assistant.** I can *read and take action* on your finances.\n\nTry saying:\n- *\"Add expense 500 Food\"*\n- *\"Log income 10000 Salary\"*\n- *\"Create account HDFC Bank\"*\n- *\"Set budget 3000 for Groceries\"*\n- *\"Delete last transaction\"*\n- *\"Switch to cyberpunk theme\"*\n- *\"Show my spending\"* / *\"Check budgets\"*\n\nWhat would you like me to do?" }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [aiTyping, setAiTyping] = useState(false);
+
+  const handleSendMessage = (textToSend?: string) => {
+    const messageText = textToSend || chatInput;
+    if (!messageText.trim()) return;
+
+    // Add user message
+    const newHistory = [...chatHistory, { sender: 'user' as const, text: messageText }];
+    setChatHistory(newHistory);
+    if (!textToSend) setChatInput('');
+
+    // Play send sound
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch {}
+
+    // Trigger AI response
+    setAiTyping(true);
+    setTimeout(() => {
+      const result = generateAIResponse(
+        messageText,
+        { accounts, transactions, budgets },
+        currency,
+        {
+          addTransaction,
+          deleteTransaction,
+          addAccount,
+          deleteAccount,
+          addBudget,
+          deleteBudget,
+          setTheme,
+          setCurrency,
+          onNavigate,
+        }
+      );
+
+      // Display the reply
+      setChatHistory(prev => [...prev, { sender: 'ai' as const, text: result.text }]);
+      setAiTyping(false);
+
+      // Execute the action (mutates store / navigates) after a tiny delay so reply renders first
+      if (result.action) {
+        setTimeout(result.action, 150);
+      }
+
+      // Play reply sound
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav');
+        audio.volume = 0.35;
+        audio.play().catch(() => {});
+      } catch {}
+    }, 1000);
+  };
+
+  // Local image file uploader (File -> Base64) — stores in Firebase DB
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      alert('Please select an image smaller than 1.5MB.');
+      return;
+    }
+    setPhotoUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditPhoto(reader.result as string);
+      setPhotoUploading(false);
+    };
+    reader.onerror = () => {
+      alert('Failed to read the image file.');
+      setPhotoUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    if (user) {
+      setEditName(user.displayName);
+      setEditPhoto(user.photoURL || '');
+    }
+  }, [user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateUserProfile({ displayName: editName, photoURL: editPhoto });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Save profile error:', err);
+    }
+  };
+
+  // Add Account handler
+  const handleAddAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccName.trim() || !newAccBalance) return;
+    addAccount({
+      name: newAccName.trim(),
+      type: newAccType,
+      balance: parseFloat(newAccBalance),
+      color: newAccColor,
+    });
+    setNewAccName('');
+    setNewAccBalance('');
+    setNewAccColor('#10B981');
+    setNewAccType('cash');
+    setShowAddAccount(false);
+  };
+
+  // Add Budget handler
+  const handleAddBudget = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBudgetLimit || parseFloat(newBudgetLimit) <= 0) return;
+    addBudget({
+      category: newBudgetCategory,
+      limit: parseFloat(newBudgetLimit),
+      month: newBudgetMonth,
+    });
+    setNewBudgetLimit('');
+    setShowAddBudget(false);
+  };
+
+  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+  const filteredTransactions = selectedAccountId 
+    ? transactions.filter(t => t.accountId === selectedAccountId)
+    : transactions;
+
+  const totalBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
+  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+
+  const chartData = filteredTransactions.slice().reverse().map(t => ({
+    date: new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    amount: t.amount,
+    type: t.type,
+  }));
+
+  const overallBudget = budgets.find(b => b.category === 'all') || { spent: 0, limit: 1 };
+
+  const getDailyFlowData = () => {
+    const last7Days: Record<string, { date: string; income: number; expense: number }> = {};
+    
+    // Initialize last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      last7Days[dateStr] = { date: dateStr, income: 0, expense: 0 };
+    }
+
+    // Populate with actual transactions
+    filteredTransactions.forEach(t => {
+      const txDate = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (last7Days[txDate]) {
+        if (t.type === 'income') {
+          last7Days[txDate].income += t.amount;
+        } else {
+          last7Days[txDate].expense += t.amount;
+        }
+      }
+    });
+
+    return Object.values(last7Days);
+  };
+
+  const dailyFlowData = getDailyFlowData();
+
+  return (
+    <div className={`min-h-screen w-full ${cStyles.bg} font-sans transition-colors duration-500 flex relative overflow-hidden`}>
+      {/* ── Background Theme Animations ──────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {theme === 'cyberpunk' && (
+          <>
+            {/* Cyber Grid */}
+            <div 
+              className="absolute inset-0 opacity-15 animate-cyber-grid" 
+              style={{
+                backgroundImage: 'linear-gradient(rgba(255, 0, 127, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 127, 0.3) 1px, transparent 1px)',
+                backgroundSize: '40px 40px',
+              }}
+            />
+            {/* Glitch Scanline */}
+            <div className="absolute left-0 right-0 h-1 bg-pink-500/20 shadow-[0_0_10px_rgba(255,0,127,0.5)] animate-scanline" />
+            {/* Flickering glow nodes */}
+            <div className="absolute top-[20%] left-[30%] w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_#FFE600] animate-flicker-slow" />
+            <div className="absolute bottom-[25%] right-[20%] w-3 h-3 rounded-full bg-pink-500 shadow-[0_0_10px_#FF007F] animate-flicker-slow" style={{ animationDelay: '1.5s' }} />
+          </>
+        )}
+
+        {theme === 'glass' && (
+          <>
+            {/* Ambient Moving Blobs */}
+            <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[#FF007F]/20 blur-[100px] animate-float-light-blob" />
+            <div className="absolute bottom-40 right-20 w-[450px] h-[450px] rounded-full bg-[#7B2CBF]/20 blur-[120px] animate-float-light-blob" style={{ animationDelay: '-10s' }} />
+            <div className="absolute top-[60%] left-[40%] w-[350px] h-[350px] rounded-full bg-[#00F0FF]/15 blur-[100px] animate-float-light-blob" style={{ animationDelay: '-18s' }} />
+            {/* Scrolling Synth grid */}
+            <div 
+              className="absolute inset-0 opacity-[0.06] animate-cyber-grid" 
+              style={{
+                backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px)',
+                backgroundSize: '50px 50px',
+              }}
+            />
+          </>
+        )}
+
+        {theme === 'forest' && (
+          <>
+            {/* Ambient warm forest glow */}
+            <div className="absolute top-10 right-10 w-[500px] h-[500px] rounded-full bg-[#E5B842]/5 blur-[150px] animate-pulse-glow" />
+            
+            {/* Drifting Fireflies / Gold particles */}
+            {[...Array(15)].map((_, i) => {
+              const size = Math.random() * 6 + 3;
+              const left = Math.random() * 100;
+              const delay = Math.random() * 15;
+              const duration = Math.random() * 10 + 12;
+              return (
+                <div 
+                  key={i}
+                  className="absolute bottom-[-20px] rounded-full bg-gradient-to-tr from-[#E5B842] to-yellow-200 animate-float-particle"
+                  style={{
+                    width: size,
+                    height: size,
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    filter: 'blur(1px) drop-shadow(0 0 4px rgba(229, 184, 66, 0.8))',
+                  }}
+                />
+              );
+            })}
+          </>
+        )}
+
+        {theme === 'light' && (
+          <>
+            {/* Organic shifting light pastel gradients */}
+            <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] rounded-full bg-indigo-200/40 blur-[90px] animate-float-light-blob" />
+            <div className="absolute bottom-[10%] right-[15%] w-[450px] h-[450px] rounded-full bg-pink-100/50 blur-[100px] animate-float-light-blob" style={{ animationDelay: '-8s' }} />
+            <div className="absolute top-[50%] right-[40%] w-[350px] h-[350px] rounded-full bg-emerald-100/30 blur-[80px] animate-float-light-blob" style={{ animationDelay: '-16s' }} />
+          </>
+        )}
+
+        {theme === 'dark' && (
+          <>
+            {/* Subtle floating digital emerald dots */}
+            {[...Array(10)].map((_, i) => {
+              const size = Math.random() * 4 + 2;
+              const left = Math.random() * 100;
+              const delay = Math.random() * 18;
+              const duration = Math.random() * 12 + 15;
+              return (
+                <div 
+                  key={i}
+                  className="absolute bottom-[-20px] rounded-full bg-[#00FF88] animate-float-particle"
+                  style={{
+                    width: size,
+                    height: size,
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    filter: 'blur(0.5px) drop-shadow(0 0 3px rgba(0, 255, 136, 0.6))',
+                  }}
+                />
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* 1. Multipage Navigation Sidebar */}
+      <aside className={`w-64 border-r ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} flex flex-col justify-between ${cStyles.cardBg} relative z-10`}>
+        <div>
+          {/* Brand Logo */}
+          <div className="p-6 border-b border-gray-800/50 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px] animate-pulse">
+              <div className="w-full h-full bg-[#0B0B0F] rounded-xl flex items-center justify-center">
+                <span className="font-['Poppins'] font-black text-xl text-white">CB</span>
+              </div>
+            </div>
+            <div>
+              <h1 className="font-['Poppins'] font-black text-lg tracking-wider">COINBURST</h1>
+              <span className="font-['Manrope'] text-[9px] tracking-widest text-emerald-400 font-semibold uppercase">Wealth Hub</span>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="mt-6 px-4 space-y-2">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+              { id: 'transactions', label: 'Ledger & Entry', icon: ArrowUpRight },
+              { id: 'budgets', label: 'Smart Budgets', icon: PiggyBank },
+              { id: 'ai', label: 'AI Advisor', icon: Bot },
+              { id: 'settings', label: 'System Theme', icon: Settings }
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id as any)}
+                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
+                    isActive ? cStyles.navActive : cStyles.navInactive
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* User profile footer */}
+        <div className="p-4 border-t border-gray-800/50 flex items-center gap-3">
+          {user && (
+            <>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName} className="w-10 h-10 rounded-full shadow-md object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-black shadow-md">
+                  {user.displayName.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">{user.displayName}</p>
+                <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
+              </div>
+              <button
+                onClick={signOutUser}
+                title="Sign Out"
+                className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer p-1 rounded-lg hover:bg-red-500/10"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content Pane */}
+      <main className="flex-1 p-8 overflow-y-auto w-full relative z-10">
+        {/* Header Banner */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <span className="text-xs uppercase tracking-widest text-gray-400 font-black">Workspace Ledger</span>
+            <h2 className="text-3xl font-black tracking-tight mt-1">
+              {activePage === 'dashboard' && 'Financial Nexus'}
+              {activePage === 'transactions' && 'Vault Transaction Ledger'}
+              {activePage === 'budgets' && 'Dynamic Limit Enforcers'}
+              {activePage === 'settings' && 'System Parameters'}
+              {activePage === 'ai' && 'AI Portfolio Advisor'}
+            </h2>
+          </div>
+
+          <div className={`flex items-center gap-4 p-2 rounded-xl border ${cStyles.headerAccent}`}>
+            <div className="text-right">
+              <span className="text-[10px] text-gray-400 block uppercase tracking-widest">Aggregate Net Worth</span>
+              <span className="text-xl font-mono font-black text-emerald-400">
+                {fmt(totalBalance)}
+              </span>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+        </header>
+
+        {/* PAGE RENDER SWITCH */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activePage}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
+          >
+            {activePage === 'dashboard' && (
+              <div className="space-y-8">
+                {/* Account Picker */}
+                <section>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold tracking-wide">My Wallet Nodes</h3>
+                    <button
+                      onClick={() => setShowAddAccount(true)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                    >
+                      <Plus className="w-4 h-4" /> Add Wallet
+                    </button>
+                  </div>
+
+                  {accounts.length === 0 ? (
+                    <div className={`p-8 rounded-2xl text-center ${cStyles.cardBg} ${cStyles.shadow}`}>
+                      <p className="text-gray-400 text-sm mb-3">No wallet nodes yet. Create your first account to start tracking.</p>
+                      <button
+                        onClick={() => setShowAddAccount(true)}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                      >
+                        <Plus className="w-4 h-4 inline mr-1" /> Create First Wallet
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-3 overflow-x-auto pb-4">
+                      <button
+                        onClick={() => setSelectedAccountId(null)}
+                        className={`px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 border cursor-pointer whitespace-nowrap ${
+                          selectedAccountId === null
+                            ? cStyles.walletBtnAllSelected
+                            : cStyles.walletBtnUnselected
+                        }`}
+                      >
+                        All Wallets
+                      </button>
+                      {accounts.map((acc) => (
+                        <div key={acc.id} className="relative group flex-shrink-0">
+                          <button
+                            onClick={() => setSelectedAccountId(acc.id)}
+                            className={`px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 border flex items-center gap-2 cursor-pointer pr-8 ${
+                              selectedAccountId === acc.id
+                                ? 'bg-opacity-100 text-white shadow-lg'
+                                : cStyles.walletBtnUnselected
+                            }`}
+                            style={{
+                              backgroundColor: selectedAccountId === acc.id ? acc.color : undefined,
+                              borderColor: acc.color,
+                            }}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                            {acc.name} ({fmt(acc.balance)})
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Delete "${acc.name}" and all its transactions?`)) {
+                                deleteAccount(acc.id);
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
+                    <motion.div whileHover={{ scale: 1.02 }} className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden`}>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Ledger Focus Balance</p>
+                      <h4 className="text-3xl font-black font-mono mt-2 tracking-tight">
+                        {fmt(selectedAccount ? selectedAccount.balance : totalBalance)}
+                      </h4>
+                    </motion.div>
+
+                    <motion.div whileHover={{ scale: 1.02 }} className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden`}>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Inbound Capital (Income)</p>
+                      <h4 className="text-3xl font-black font-mono mt-2 tracking-tight text-emerald-400">
+                        +{fmt(totalIncome)}
+                      </h4>
+                    </motion.div>
+
+                    <motion.div whileHover={{ scale: 1.02 }} className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden`}>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl" />
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Outbound Burn (Expenses)</p>
+                      <h4 className="text-3xl font-black font-mono mt-2 tracking-tight text-pink-500">
+                        -{fmt(totalExpense)}
+                      </h4>
+                    </motion.div>
+                  </div>
+                </section>
+
+                {/* Plot and Liquid */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className={`lg:col-span-2 p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                    <h3 className="text-lg font-black tracking-wide">Liquidity Trend Analysis</h3>
+                    <div className="h-72 w-full mt-4">
+                      {chartData.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-gray-500">No chart data yet.</div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData}>
+                            <defs>
+                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={cStyles.chartColors[0]} stopOpacity={0.4}/>
+                                <stop offset="95%" stopColor={cStyles.chartColors[0]} stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke={cStyles.gridColor} />
+                            <XAxis dataKey="date" stroke="#9CA3AF" fontSize={11} tickLine={false} />
+                            <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} />
+                            <Tooltip contentStyle={{ backgroundColor: '#0B0B0F', borderColor: '#1E1E26', color: '#fff', borderRadius: '12px' }} />
+                            <Area type="monotone" dataKey="amount" stroke={cStyles.chartColors[0]} fill="url(#colorValue)" strokeWidth={3} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} flex flex-col justify-between items-center`}>
+                    <h3 className="text-lg font-black tracking-wide text-center">Overall Budget Sentinel</h3>
+                    <LiquidProgressBar spent={overallBudget.spent} limit={overallBudget.limit} />
+                    <div className="mt-6 text-center w-full space-y-2">
+                      <div className="flex justify-between text-xs px-4">
+                        <span className="text-gray-400">Total Limit</span>
+                        <span className={`font-mono font-bold ${cStyles.textNormal}`}>{fmt(overallBudget.limit)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs px-4">
+                        <span className="text-gray-400">Current Burn</span>
+                        <span className="font-mono text-pink-500 font-bold">{fmt(overallBudget.spent)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Spent vs Savings Daily Comparison Graph Section */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className={`lg:col-span-2 p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="text-lg font-black tracking-wide">Outflow vs. Inflow Analysis</h3>
+                        <p className="text-xs text-gray-400">7-day cash flow comparison of expenses and savings</p>
+                      </div>
+                      <div className="flex gap-4 text-xs font-bold">
+                        <span className="flex items-center gap-1.5 text-emerald-400">
+                          <span className="w-3 h-3 rounded bg-emerald-400" /> Inbound
+                        </span>
+                        <span className="flex items-center gap-1.5 text-pink-500">
+                          <span className="w-3 h-3 rounded bg-pink-500" /> Outflow
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="h-72 w-full mt-4">
+                      {filteredTransactions.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-gray-500">No transaction flow data available.</div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={dailyFlowData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={cStyles.gridColor} />
+                            <XAxis dataKey="date" stroke="#9CA3AF" fontSize={11} tickLine={false} />
+                            <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} />
+                            <Tooltip contentStyle={{ backgroundColor: '#0B0B0F', borderColor: '#1E1E26', color: '#fff', borderRadius: '12px' }} />
+                            <Bar dataKey="income" fill="#10B981" radius={[4, 4, 0, 0]} name="Inbound" />
+                            <Bar dataKey="expense" fill="#F43F5E" radius={[4, 4, 0, 0]} name="Outflow" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Flow Summary Card */}
+                  <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} flex flex-col justify-between`}>
+                    <div>
+                      <h3 className="text-lg font-black tracking-wide mb-4">Flow Summary</h3>
+                      <div className="space-y-4">
+                        <div className={`p-4 rounded-xl ${cStyles.cardAccentBg} border border-white/5`}>
+                          <span className="text-[10px] text-gray-400 uppercase tracking-widest block mb-1">Net Savings (Inbound - Outflow)</span>
+                          <span className={`text-2xl font-black font-mono ${totalIncome - totalExpense >= 0 ? 'text-emerald-400' : 'text-pink-500'}`}>
+                            {totalIncome - totalExpense >= 0 ? '+' : '-'}{fmt(Math.abs(totalIncome - totalExpense))}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className={`p-3.5 rounded-xl ${cStyles.cardAccentBg} border border-white/5`}>
+                            <span className="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Savings Ratio</span>
+                            <span className="text-base font-black font-mono text-white">
+                              {totalIncome > 0 ? `${((totalIncome - totalExpense) / totalIncome * 100).toFixed(0)}%` : '0%'}
+                            </span>
+                          </div>
+                          <div className={`p-3.5 rounded-xl ${cStyles.cardAccentBg} border border-white/5`}>
+                            <span className="text-[9px] text-gray-400 uppercase tracking-widest block mb-0.5">Burn Rate</span>
+                            <span className="text-base font-black font-mono text-pink-500">
+                              {totalIncome > 0 ? `${(totalExpense / totalIncome * 100).toFixed(0)}%` : '0%'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`mt-6 p-4 rounded-xl ${theme === 'cyberpunk' ? 'bg-[#FF007F]/10 border border-[#FF007F]/20' : 'bg-emerald-500/5 border border-emerald-500/10'}`}>
+                      <span className="text-[9px] uppercase tracking-widest font-black text-emerald-400 flex items-center gap-1 mb-1.5">
+                        <Sparkles className="w-3.5 h-3.5" /> AI Insight
+                      </span>
+                      <p className="text-[11px] text-gray-400 leading-normal">
+                        {totalIncome === 0 
+                          ? "No capital inflow logged. Feed the ledger to unlock predictive analytics and burn rate forecasting."
+                          : totalIncome > totalExpense
+                            ? "Capital expansion is positive. Your reserves are compiling at a stable rate. Maintain current parameters."
+                            : "⚠️ Deficit detected. Capital outflow exceeds harvest. Engage strict budget limiters immediately."}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Ledger Feed */}
+                <section className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black tracking-wide">Activity Ledger Feed</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => downloadStatement(filteredTransactions, accounts)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                      >
+                        <Download className="w-4 h-4" /> Statement
+                      </button>
+                      <button 
+                        onClick={onOpenForm}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                      >
+                        <Plus className="w-4 h-4" /> Add Transaction
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                    {filteredTransactions.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500 text-sm font-semibold">
+                        No transactions tracked for this scope.
+                      </div>
+                    ) : (
+                      filteredTransactions.map((tx) => {
+                        const acc = accounts.find(a => a.id === tx.accountId);
+                        return (
+                          <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl transition-colors ${cStyles.ledgerFeedBg}`}>
+                            <div className="flex items-center gap-4">
+                              <div className={`p-2.5 rounded-xl ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
+                                {tx.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm">{tx.description}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${cStyles.badgeBg}`}>{tx.category}</span>
+                                  {acc && <span className="text-[10px] font-bold" style={{ color: acc.color }}>• {acc.name}</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+                              </span>
+                              <button onClick={() => deleteTransaction(tx.id)} className="p-2 text-gray-500 hover:text-red-500 cursor-pointer">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {activePage === 'transactions' && (
+              <div className="space-y-8">
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-black">Full Transactions Vault Ledger</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => downloadStatement(transactions, accounts)}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                      >
+                        <Download className="w-4 h-4" /> Download CSV
+                      </button>
+                      <button onClick={onOpenForm} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}>
+                        <Plus className="w-4 h-4" /> Add Transaction
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {transactions.map((tx) => {
+                      const acc = accounts.find(a => a.id === tx.accountId);
+                      return (
+                        <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl ${cStyles.ledgerFeedBg}`}>
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
+                              {tx.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-sm">{tx.description}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-[10px] px-2 py-0.5 rounded uppercase ${cStyles.badgeBg}`}>{tx.category}</span>
+                                {acc && <span className="text-[10px] font-bold" style={{ color: acc.color }}>• {acc.name}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                              {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
+                            </span>
+                            <button onClick={() => deleteTransaction(tx.id)} className="p-2 text-gray-500 hover:text-red-500 cursor-pointer">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePage === 'budgets' && (
+              <div className="space-y-8">
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="text-lg font-black tracking-wide">Budget Limiters</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Set spending caps per category. Tracked automatically from transactions.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddBudget(true)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                    >
+                      <Plus className="w-4 h-4" /> New Budget
+                    </button>
+                  </div>
+
+                  {budgets.length === 0 ? (
+                    <div className="py-16 flex flex-col items-center gap-4 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400">
+                        <PiggyBank className="w-8 h-8" />
+                      </div>
+                      <p className="text-gray-400 text-sm">No budgets set up yet.</p>
+                      <p className="text-gray-500 text-xs max-w-xs">Create category budget limits to automatically track your spending and get alerts when nearing your cap.</p>
+                      <button
+                        onClick={() => setShowAddBudget(true)}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                      >
+                        <Plus className="w-4 h-4 inline mr-1" /> Create First Budget
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-items-center">
+                      {budgets.map(b => (
+                        <div key={b.id} className={`flex flex-col items-center p-6 rounded-2xl w-full max-w-xs ${cStyles.cardAccentBg} relative group`}>
+                          <div className="flex justify-between items-center w-full mb-4">
+                            <span className="text-sm font-black uppercase tracking-wider">{b.category}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-gray-400">{b.month}</span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete "${b.category}" budget?`)) {
+                                    deleteBudget(b.id);
+                                  }
+                                }}
+                                className="text-gray-500 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <LiquidProgressBar spent={b.spent} limit={b.limit} />
+                          <div className="mt-4 w-full text-center">
+                            <span className="text-xs text-gray-400">{fmt(b.spent)} / {fmt(b.limit)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activePage === 'settings' && (
+              <div className="space-y-8">
+                {/* 1. Profile Settings Panel */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <h3 className="text-lg font-black mb-1">User Profile Settings</h3>
+                  <p className="text-xs text-gray-400 mb-6">Changes are saved directly to Firebase — visible instantly across all devices.</p>
+                  <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
+
+                    {/* Avatar section */}
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      {/* Live avatar preview */}
+                      <div className="relative group shrink-0">
+                        <label htmlFor="profilePhotoFile" className="cursor-pointer block">
+                          {editPhoto ? (
+                            <img
+                              src={editPhoto}
+                              alt="Profile"
+                              className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500/40 shadow-xl"
+                            />
+                          ) : (
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl border-4 border-emerald-500/40 shadow-xl">
+                              {editName ? editName.substring(0, 2).toUpperCase() : 'CB'}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                            {photoUploading ? (
+                              <span className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <span className="text-white text-xs font-bold text-center leading-tight px-2">📷 Change</span>
+                            )}
+                          </div>
+                        </label>
+                        {editPhoto && (
+                          <button
+                            type="button"
+                            onClick={() => setEditPhoto('')}
+                            title="Remove photo"
+                            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold cursor-pointer hover:bg-red-400 transition-colors"
+                          >✕</button>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-3 w-full">
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                            Upload from Device (max 1.5MB)
+                          </label>
+                          <input
+                            id="profilePhotoFile"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className={`w-full text-xs file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:uppercase file:tracking-widest ${theme === 'cyberpunk' ? 'file:bg-[#FFE600] file:text-[#12042C]' : 'file:bg-emerald-500/20 file:text-emerald-400'} file:cursor-pointer cursor-pointer rounded-xl border p-2 ${cStyles.input}`}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                            Or paste photo URL (Google Drive / Cloud)
+                          </label>
+                          <input
+                            type="text"
+                            value={editPhoto}
+                            onChange={(e) => setEditPhoto(e.target.value)}
+                            placeholder="https://drive.google.com/uc?id=..."
+                            className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-300 ${cStyles.input}`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Display Name */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Display Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Your Name"
+                        className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-300 ${cStyles.input}`}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-4 pt-2">
+                      <button
+                        type="submit"
+                        disabled={photoUploading}
+                        className={`px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer ${cStyles.primaryBtn} disabled:opacity-50`}
+                      >
+                        {photoUploading ? 'Processing Photo...' : 'Save Profile Changes'}
+                      </button>
+                      {saveSuccess && (
+                        <span className="text-xs text-emerald-400 font-bold animate-pulse">
+                          ✓ Profile updated and synced!
+                        </span>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* 2. Theme Switcher */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <h3 className="text-lg font-black mb-2">Dynamic Theme Switcher</h3>
+                  <p className="text-xs text-gray-400 mb-6">Instantly swap the global user interface aesthetic with integrated audio feedback.</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {[
+                      { id: 'dark', title: 'True Dark', desc: 'AMOLED Black & neon emerald.' },
+                      { id: 'light', title: 'Soft Light', desc: 'Pastel palettes & clean shadows.' },
+                      { id: 'cyberpunk', title: 'Retro Cyber', desc: 'High-contrast yellow & neon pink.' },
+                      { id: 'glass', title: 'Glass Synth', desc: 'Sunset gradients & glassmorphism.' },
+                      { id: 'forest', title: 'Forest Zen', desc: 'Deep evergreens & warm gold.' }
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          setTheme(t.id as ThemeType);
+                          playThemeSound(t.id);
+                        }}
+                        className={`p-5 rounded-2xl border-2 text-left transition-all duration-300 cursor-pointer flex flex-col justify-between h-36 ${
+                          theme === t.id 
+                            ? cStyles.settingsBtnSelected 
+                            : cStyles.settingsBtnUnselected
+                        }`}
+                      >
+                        <h4 className="font-black text-sm mb-2">{t.title}</h4>
+                        <p className="text-[11px] text-gray-400 leading-normal">{t.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Currency Selector */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <h3 className="text-lg font-black mb-2">Currency Preference</h3>
+                  <p className="text-xs text-gray-400 mb-4">Changes are synced to Firebase and reflect instantly across all devices including the React Native app.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {SUPPORTED_CURRENCIES.map(c => (
+                      <button
+                        key={c.code}
+                        onClick={() => setCurrency(c.code)}
+                        className={`p-4 rounded-xl border-2 text-left transition-all duration-300 cursor-pointer ${
+                          currency === c.code ? cStyles.settingsBtnSelected : cStyles.settingsBtnUnselected
+                        }`}
+                      >
+                        <span className="text-2xl font-black block mb-1">{c.symbol}</span>
+                        <span className="text-xs font-bold block">{c.code}</span>
+                        <span className="text-[10px] text-gray-400 leading-none">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePage === 'ai' && (
+              <div className="space-y-8">
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow} flex flex-col h-[600px] relative overflow-hidden border border-white/5`}>
+                  {/* Background Decorative Glow */}
+                  <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+                  <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+
+                  {/* Terminal Header */}
+                  <div className="flex items-center justify-between border-b border-gray-800/60 pb-4 mb-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30 text-purple-400">
+                        <Bot className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-base">CoinBurst Autonomous AI Advisor</h3>
+                        <span className="text-[10px] text-emerald-400 font-mono tracking-widest uppercase block">Quantum Analysis Active</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-[10px] text-gray-400 font-mono">LIVE CONNECTED</span>
+                    </div>
+                  </div>
+
+                  {/* Scrollable Chat Area */}
+                  <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4 relative z-10">
+                    {chatHistory.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] p-4 rounded-2xl text-sm ${
+                            msg.sender === 'user'
+                              ? theme === 'cyberpunk'
+                                ? 'bg-[#FFE600] text-[#12042C] font-mono border border-[#FFE600]'
+                                : 'bg-emerald-500/20 text-white border border-emerald-500/30'
+                              : cStyles.cardAccentBg + ' text-gray-200 border border-white/5'
+                          }`}
+                        >
+                          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+                            {msg.sender === 'user' ? 'USER QUERY' : 'PORTFOLIO INTELLIGENCE'}
+                          </div>
+                          <MarkdownText text={msg.text} />
+                        </div>
+                      </div>
+                    ))}
+
+                    {aiTyping && (
+                      <div className="flex justify-start">
+                        <div className={`p-4 rounded-2xl text-sm ${cStyles.cardAccentBg} border border-white/5 flex items-center gap-2 text-gray-400`}>
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">AI TYPING</span>
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Analysis Pills */}
+                  <div className="flex flex-wrap gap-2 mb-4 relative z-10">
+                    {[
+                      { label: '🔍 Analyze Spending', query: 'Analyze my expenses' },
+                      { label: '⚠️ Budget Limits', query: 'Am I over budget?' },
+                      { label: '📈 Savings Ratio', query: 'How are my savings doing?' },
+                      { label: '💼 Vault Holdings', query: 'Summarize my accounts' }
+                    ].map((pill, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSendMessage(pill.query)}
+                        disabled={aiTyping}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 cursor-pointer disabled:opacity-50 ${cStyles.walletBtnUnselected}`}
+                      >
+                        {pill.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Chat input form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }}
+                    className="flex gap-3 relative z-10"
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      disabled={aiTyping}
+                      placeholder="Ask the advisor... (e.g. 'how are my budgets?', 'give me savings tips')"
+                      className={`flex-1 px-4 py-3.5 rounded-xl focus:outline-none transition-all duration-300 disabled:opacity-50 ${cStyles.input}`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={aiTyping || !chatInput.trim()}
+                      className={`px-6 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-300 cursor-pointer disabled:opacity-50 ${cStyles.primaryBtn}`}
+                    >
+                      Transmit
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Welcome Popup Modal */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className={`max-w-md w-full p-8 rounded-3xl text-center ${cStyles.cardBg} ${cStyles.shadow} relative overflow-hidden border border-white/10`}
+            >
+              {/* Decorative background glows */}
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#FF007F]/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#00FF88]/10 rounded-full blur-3xl" />
+              
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-[#FF007F] via-[#00FF88] to-[#00E5FF] p-[2px]">
+                <div className="w-full h-full bg-[#0B0B0F] rounded-2xl flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-emerald-400 animate-pulse" />
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-black tracking-tight mb-2 text-white">
+                Welcome to CoinBurst
+              </h3>
+              <p className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-6">
+                Secure Financial Nexus
+              </p>
+              
+              <p className={`text-sm mb-6 ${cStyles.textMuted}`}>
+                Greetings, <span className="font-bold text-white">{user ? user.displayName : 'Guest Operative'}</span>. Your decentralized financial ledger has loaded successfully.
+              </p>
+              
+              <div className={`p-4 rounded-2xl ${cStyles.cardAccentBg} text-left space-y-2 mb-8 border border-white/5`}>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Ledger Accounts:</span>
+                  <span className="font-mono font-bold text-white">{accounts.length}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Logged Actions:</span>
+                  <span className="font-mono font-bold text-white">{transactions.length}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Active Capital:</span>
+                  <span className="font-mono font-bold text-emerald-400">{fmt(totalBalance)}</span>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleDismissWelcome}
+                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all duration-300 cursor-pointer ${cStyles.primaryBtn}`}
+              >
+                Unlock Ledger Vault
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Add Account Modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showAddAccount && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowAddAccount(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className={`relative z-10 w-full max-w-md p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black">Add Wallet Node</h3>
+                <button onClick={() => setShowAddAccount(false)} className={`p-2 rounded-full cursor-pointer ${cStyles.closeBtn}`}>
+                  <ArrowDownRight className="w-5 h-5 rotate-45" />
+                </button>
+              </div>
+              <form onSubmit={handleAddAccount} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Wallet Name</label>
+                  <input
+                    required value={newAccName} onChange={e => setNewAccName(e.target.value)}
+                    placeholder="e.g. Chase Savings"
+                    className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Type</label>
+                    <select value={newAccType} onChange={e => setNewAccType(e.target.value as any)} className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}>
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank</option>
+                      <option value="credit">Credit</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Initial Balance ($)</label>
+                    <input
+                      required type="number" step="0.01"
+                      value={newAccBalance} onChange={e => setNewAccBalance(e.target.value)}
+                      placeholder="0.00"
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none font-mono ${cStyles.input}`}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Color Tag</label>
+                  <div className="flex items-center gap-3">
+                    <input type="color" value={newAccColor} onChange={e => setNewAccColor(e.target.value)}
+                      className="w-12 h-10 rounded-lg cursor-pointer border-0 bg-transparent"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      {['#10B981','#3B82F6','#EC4899','#8B5CF6','#F59E0B','#EF4444'].map(c => (
+                        <button type="button" key={c} onClick={() => setNewAccColor(c)}
+                          className="w-7 h-7 rounded-full cursor-pointer border-2 transition-all"
+                          style={{ backgroundColor: c, borderColor: newAccColor === c ? 'white' : 'transparent' }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${cStyles.primaryBtn}`}>
+                  Create Wallet Node
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Add Budget Modal ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showAddBudget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowAddBudget(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 30, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className={`relative z-10 w-full max-w-md p-8 rounded-3xl ${cStyles.cardBg} ${cStyles.shadow}`}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black">Set Budget Limit</h3>
+                <button onClick={() => setShowAddBudget(false)} className={`p-2 rounded-full cursor-pointer ${cStyles.closeBtn}`}>
+                  <ArrowDownRight className="w-5 h-5 rotate-45" />
+                </button>
+              </div>
+              <form onSubmit={handleAddBudget} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Category</label>
+                  <select value={newBudgetCategory} onChange={e => setNewBudgetCategory(e.target.value)} className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}>
+                    {['Food', 'Entertainment', 'Shopping', 'Rent', 'Utilities', 'Travel', 'Healthcare', 'Transport', 'Education', 'Other', 'all'].map(cat => (
+                      <option key={cat} value={cat}>{cat === 'all' ? '📊 All Categories (Overall)' : cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Monthly Limit ($)</label>
+                    <input
+                      required type="number" step="0.01" min="1"
+                      value={newBudgetLimit} onChange={e => setNewBudgetLimit(e.target.value)}
+                      placeholder="500.00"
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none font-mono ${cStyles.input}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Month (YYYY-MM)</label>
+                    <input
+                      required type="month"
+                      value={newBudgetMonth} onChange={e => setNewBudgetMonth(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none ${cStyles.input}`}
+                    />
+                  </div>
+                </div>
+                <button type="submit" className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider ${cStyles.primaryBtn}`}>
+                  Activate Budget Limiter
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};

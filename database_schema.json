@@ -1,0 +1,44 @@
+﻿{
+  "_comment": "CoinBurst Firebase Realtime Database Schema - All data is stored under users/{uid}",
+  "users": {
+    "$uid": {
+      "_comment": "Node keyed by Firebase Auth UID. Security rules: auth.uid == $uid",
+      "profile": {
+        "displayName": "string (1-100 chars)",
+        "email": "string",
+        "photoURL": "string (URL, max 2048 chars)"
+      },
+      "theme": "dark | light | cyberpunk | glass | forest",
+      "currency": "string (ISO 4217, 3 chars, e.g. INR, USD)",
+      "accounts": [
+        {
+          "id": "string (acc_xxxxxxx)",
+          "name": "string",
+          "type": "cash | bank | credit",
+          "balance": "number",
+          "color": "string (hex color)"
+        }
+      ],
+      "transactions": [
+        {
+          "id": "string (tx_xxxxxxx)",
+          "accountId": "string (references accounts[].id)",
+          "type": "income | expense",
+          "category": "string",
+          "amount": "number (positive)",
+          "description": "string",
+          "date": "string (ISO 8601)"
+        }
+      ],
+      "budgets": [
+        {
+          "id": "string (bud_xxxxxxx)",
+          "category": "string (or 'all' for overall budget)",
+          "limit": "number (monthly cap)",
+          "spent": "number (current month spend)",
+          "month": "string (YYYY-MM)"
+        }
+      ]
+    }
+  }
+}
