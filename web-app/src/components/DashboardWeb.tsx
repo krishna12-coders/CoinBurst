@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
-import type { ThemeType } from '../shared/useFinanceStore';
+import type { ThemeType, Transaction } from '../shared/useFinanceStore';
 import { signOutUser } from '../shared/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -9,8 +9,10 @@ import {
 } from 'recharts';
 import { 
   Plus, Trash2, ArrowUpRight, ArrowDownRight, Settings, 
-  TrendingUp, PiggyBank, BarChart3, LogOut, Bot, Download, Sparkles
+  TrendingUp, PiggyBank, BarChart3, LogOut, Bot, Download, Sparkles, Info, Pencil
 } from 'lucide-react';
+import { AboutWeb } from './AboutWeb';
+import { CalendarChartColumn } from './CalendarChartColumn';
 
 // --- Theme Helper Hooks ---
 export const useThemeStyles = () => {
@@ -166,6 +168,36 @@ export const useThemeStyles = () => {
       cardAccentBg: 'bg-[#142C1E] border border-[#234F35]',
       settingsBtnSelected: 'border-[#E5B842] bg-[#E5B842]/5 shadow-md shadow-[#E5B842]/10',
       settingsBtnUnselected: 'border-[#234F35] hover:border-gray-600 bg-[#142C1E]',
+    },
+    synthwave: {
+      bg: 'bg-[#0A0516] text-[#00E5FF] selection:bg-[#FF007F] selection:text-white',
+      cardBg: 'bg-[#120B24] border border-[#FF007F]/60 shadow-[0_0_15px_rgba(255,0,127,0.15)]',
+      textMuted: 'text-[#9A8EA9]',
+      textNormal: 'text-[#00E5FF]',
+      accent: 'text-[#00E5FF]',
+      accentBg: 'bg-[#00E5FF]/10',
+      accentPink: 'text-[#FF007F]',
+      primaryBtn: 'bg-gradient-to-r from-[#FF007F] via-[#B200FF] to-[#00E5FF] text-white font-extrabold uppercase tracking-wider hover:shadow-[0_0_20px_rgba(0,229,255,0.6)] border border-white/10 transition-all duration-300 cursor-pointer',
+      primaryBtnOutline: 'border-2 border-[#FF007F] text-[#FF007F] hover:bg-[#FF007F]/15 font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer',
+      input: 'bg-[#0A0516] border border-[#FF007F]/50 focus:border-[#00E5FF] text-[#00E5FF] font-mono',
+      shadow: 'shadow-[0_0_25px_rgba(178,0,255,0.25)]',
+      gradientBorder: 'hover:border-[#00E5FF] hover:shadow-[0_0_20px_rgba(255,0,127,0.4)] transition-all duration-300',
+      navActive: 'bg-[#FF007F]/15 text-[#00E5FF] border-r-4 border-[#FF007F] shadow-[inset_0_0_10px_rgba(255,0,127,0.3)]',
+      navInactive: 'text-[#FF007F] hover:text-[#00E5FF] hover:bg-[#FF007F]/10',
+      chartColors: ['#FF007F', '#00E5FF', '#B200FF', '#FFE600'],
+      gridColor: 'rgba(255, 0, 127, 0.2)',
+      walletBtnUnselected: 'bg-[#120B24] text-[#FF007F] border-[#FF007F]/40 hover:border-[#FF007F]',
+      walletBtnAllSelected: 'bg-gradient-to-r from-[#FF007F] to-[#00E5FF] text-white border-none',
+      headerAccent: 'bg-[#120B24] border border-[#FF007F]/40',
+      ledgerFeedBg: 'bg-[#120B24]/60 hover:bg-[#120B24] border border-[#FF007F]/30',
+      dialogHeaderBg: 'bg-[#0A0516] border border-[#FF007F]/40',
+      tabInactive: 'text-[#FF007F] hover:text-[#00E5FF]',
+      closeBtn: 'text-[#FF007F] hover:text-[#00E5FF] bg-[#FF007F]/10 hover:bg-[#FF007F]/20',
+      selectOptionBg: 'bg-[#120B24] text-[#00E5FF]',
+      badgeBg: 'bg-[#0A0516] text-[#9A8EA9]',
+      cardAccentBg: 'bg-[#120B24] border border-[#FF007F]/30',
+      settingsBtnSelected: 'border-[#00E5FF] bg-[#00E5FF]/5 shadow-lg shadow-[#00E5FF]/10',
+      settingsBtnUnselected: 'border-[#FF007F]/50 hover:border-[#FF007F] bg-[#120B24]',
     }
   };
   
@@ -188,6 +220,7 @@ export const LiquidProgressBar: React.FC<{ spent: number; limit: number }> = ({ 
     glowColor = 'rgba(245, 158, 11, 0.5)';
   }
 
+  // Wave height offset (from 100=empty to 10=full)
   const waveY = 100 - (percentage * 0.9);
 
   return (
@@ -197,20 +230,28 @@ export const LiquidProgressBar: React.FC<{ spent: number; limit: number }> = ({ 
         className="absolute inset-0 w-full h-full"
         style={{ filter: `drop-shadow(0 0 8px ${glowColor})` }}
       >
+        {/* Back Wave (slower, offset phase, lower opacity) */}
         <motion.path
-          d={`M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`}
+          d={`M 0,${waveY} Q 25,${waveY - 4} 50,${waveY} T 100,${waveY} Q 125,${waveY - 4} 150,${waveY} T 200,${waveY} L 200,100 L 0,100 Z`}
           fill={fillColor}
-          animate={{
-            d: [
-              `M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`,
-              `M 0,${waveY} Q 25,${waveY + 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`,
-              `M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} L 100,100 L 0,100 Z`
-            ]
-          }}
+          opacity={0.35}
+          animate={{ x: [-100, 0] }}
           transition={{
             repeat: Infinity,
-            duration: 4,
-            ease: "easeInOut"
+            duration: 4.5,
+            ease: "linear"
+          }}
+        />
+        {/* Front Wave (faster, full opacity, opposite direction) */}
+        <motion.path
+          d={`M 0,${waveY} Q 25,${waveY - 6} 50,${waveY} T 100,${waveY} Q 125,${waveY - 6} 150,${waveY} T 200,${waveY} L 200,100 L 0,100 Z`}
+          fill={fillColor}
+          opacity={0.75}
+          animate={{ x: [0, -100] }}
+          transition={{
+            repeat: Infinity,
+            duration: 2.8,
+            ease: "linear"
           }}
         />
       </svg>
@@ -238,7 +279,8 @@ const playThemeSound = (themeId: string) => {
       light: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav', // Soft pop
       cyberpunk: 'https://assets.mixkit.co/active_storage/sfx/1072/1072-84.wav', // Retro laser
       glass: 'https://assets.mixkit.co/active_storage/sfx/911/911-84.wav', // Synth chime
-      forest: 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav' // Wood block nature chime
+      forest: 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav', // Wood block nature chime
+      synthwave: 'https://assets.mixkit.co/active_storage/sfx/1072/1072-84.wav' // Retro laser
     };
     const url = audioUrls[themeId as keyof typeof audioUrls];
     if (url) {
@@ -471,11 +513,12 @@ const generateAIResponse = (
   const themeMap: Record<string, string> = {
     dark: 'dark', night: 'dark', black: 'dark',
     light: 'light', white: 'light', day: 'light',
-    cyberpunk: 'cyberpunk', neon: 'cyberpunk', cyber: 'cyberpunk',
+    cyberpunk: 'cyberpunk', cyber: 'cyberpunk',
     glass: 'glass', glassmorphism: 'glass',
     forest: 'forest', green: 'forest', nature: 'forest',
+    synthwave: 'synthwave', neon: 'synthwave', vaporwave: 'synthwave',
   };
-  if (/\b(theme|mode|appearance|look)\b/.test(q) || /\b(switch|change|set)\b.*(dark|light|cyber|glass|forest|neon|night)/.test(q)) {
+  if (/\b(theme|mode|appearance|look)\b/.test(q) || /\b(switch|change|set)\b.*(dark|light|cyber|glass|forest|neon|night|synth|vapor)/.test(q)) {
     const found = Object.keys(themeMap).find(k => q.includes(k));
     if (found) {
       const theme = themeMap[found];
@@ -484,7 +527,7 @@ const generateAIResponse = (
         action: () => store.setTheme(theme as any),
       };
     }
-    return { text: `Available themes: **Dark**, **Light**, **Cyberpunk**, **Glass**, **Forest**. Say *"switch to cyberpunk theme"*.` };
+    return { text: `Available themes: **Dark**, **Light**, **Cyberpunk**, **Glass**, **Forest**, **Synthwave**. Say *"switch to synthwave theme"*.` };
   }
 
   // ── CHANGE CURRENCY ───────────────────────────────────────────────────────
@@ -573,9 +616,106 @@ const generateAIResponse = (
     return { text: response };
   }
 
+  // ── FINANCIAL FORECASTING ────────────────────────────────────────────────
+  if (q.includes('forecast') || q.includes('predict') || q.includes('projection') || q.includes('future')) {
+    const expenses = state.transactions.filter(t => t.type === 'expense');
+    if (expenses.length === 0) {
+      return { text: `⚠️ **Forecasting requires historical data.** Log some expenses first to enable spending forecasts!` };
+    }
+    
+    // Calculate daily average velocity
+    let earliestTime = Date.now();
+    expenses.forEach(e => {
+      const t = new Date(e.date).getTime();
+      if (t < earliestTime) earliestTime = t;
+    });
+    
+    const diffMs = Date.now() - earliestTime;
+    const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    
+    const avgExpensePerDay = totalExpense / diffDays;
+    const projected30Days = avgExpensePerDay * 30;
+    
+    let advice = '';
+    if (projected30Days > totalBalance) {
+      advice = `⚠️ **Deficit Risk:** At your current spending velocity of **${fmtAI(avgExpensePerDay)}/day**, your projected 30-day outflow is **${fmtAI(projected30Days)}**, which exceeds your total liquid balance of **${fmtAI(totalBalance)}**. We advise setting stricter budget limits or reducing non-essential categories!`;
+    } else {
+      const remainingBalance = totalBalance - projected30Days;
+      advice = `✅ **Healthy Runway:** At your current velocity of **${fmtAI(avgExpensePerDay)}/day**, your projected 30-day outflow is **${fmtAI(projected30Days)}**. Your balances are sufficient to cover this, leaving a projected surplus of **${fmtAI(remainingBalance)}**.`;
+    }
+    
+    return {
+      text: `### 🔮 Spending Forecast (30 Days)\n\n- **Current Velocity**: ${fmtAI(avgExpensePerDay)} / day\n- **Projected Outflow (30 Days)**: **${fmtAI(projected30Days)}**\n- **Available Liquidity**: ${fmtAI(totalBalance)}\n\n${advice}`
+    };
+  }
+
+  // ── SEARCH TRANSACTIONS ───────────────────────────────────────────────────
+  if (q.includes('find') || q.includes('search') || q.includes('filter')) {
+    const term = raw.replace(/find|search|filter|show|me|transactions|for/gi, '').trim().toLowerCase();
+    if (!term) {
+      return { text: `Please specify a keyword to search. Try: *"find Groceries"* or *"search Salary"*` };
+    }
+    
+    const matches = state.transactions.filter(t => 
+      t.category.toLowerCase().includes(term) || 
+      t.description.toLowerCase().includes(term)
+    );
+    
+    if (matches.length === 0) {
+      return { text: `No transactions found matching keyword *"${term}"*.` };
+    }
+    
+    let matchExpenses = matches.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    let matchIncomes = matches.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    
+    let response = `### 🔍 Search Results for "${term}"\n\nFound **${matches.length}** records:\n\n`;
+    matches.slice(0, 10).forEach(t => {
+      response += `- ${t.type === 'income' ? '💰' : '💸'} **${t.category}**: ${fmtAI(t.amount)} — *"${t.description || 'No desc'}"* (${new Date(t.date).toLocaleDateString()})\n`;
+    });
+    
+    if (matches.length > 10) {
+      response += `\n*(Showing top 10 results)*\n`;
+    }
+    
+    response += `\n**Totals for match:**\n- Inflows: **+${fmtAI(matchIncomes)}**\n- Outflows: **-${fmtAI(matchExpenses)}**`;
+    return { text: response };
+  }
+
+  // ── SAVINGS ADVISOR / ADVICE ──────────────────────────────────────────────
+  if (q.includes('advice') || q.includes('tip') || q.includes('recommendation') || q.includes('suggest')) {
+    const expenses = state.transactions.filter(t => t.type === 'expense');
+    if (expenses.length === 0) {
+      return { 
+        text: `### 💡 Wealth Builder Advice\n\n- **Get Started**: You haven't logged any expenses yet! To receive tailored advice, start tracking your spendings by logging expenses (e.g. *"add expense 150 coffee"*).\n- **Golden Rule**: Always pay yourself first. Aim to automate **20%** of any incoming salary direct to a separate savings vault before paying bills.` 
+      };
+    }
+    
+    const categories: Record<string, number> = {};
+    expenses.forEach(t => {
+      categories[t.category] = (categories[t.category] || 0) + t.amount;
+    });
+    
+    const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+    const [topCat, topAmt] = sorted[0];
+    const cut15 = topAmt * 0.15;
+    const targetLimit = topAmt * 0.85;
+    
+    let response = `### 💡 Custom AI Portfolio Advice\n\n`;
+    response += `- **Top Outflow Source**: Your largest spending category is **${topCat}**, accounting for **${fmtAI(topAmt)}** of outflow.\n`;
+    response += `- **Optimisation Goal**: Trimming **15%** off this category next month would save you **${fmtAI(cut15)}**!\n`;
+    response += `- **Next Action**: Try setting a strict budget limit of **${fmtAI(targetLimit)}** for **${topCat}** to lock in those savings.\n\n`;
+    
+    response += `**🏆 High-Yield Savings Habits:**\n`;
+    response += `1. **Rule of 72**: Keep cash reserves in high-yield bank nodes (target 5%+ APY) to double your cash faster.\n`;
+    response += `2. **Subscription Audit**: Scan your ledger for recurring utility nodes you don't use. Cancel them to boost monthly cash flow velocity.\n`;
+    response += `3. **Micro-Investing**: Invest any monthly surplus cash flow immediately into liquid market indices to outpace inflation.`;
+    
+    return { text: response };
+  }
+
   // ── HELP / FALLBACK ───────────────────────────────────────────────────────
   return {
-    text: `### 🤖 CoinBurst AI — What I Can Do\n\n**📊 Read & Analyze**\n- *"Check my budgets"* / *"Am I over budget?"*\n- *"Analyze my expenses"* / *"Show spending"*\n- *"How are my savings?"* / *"Net cash flow"*\n- *"Show account balances"* / *"Recent transactions"*\n\n**✏️ Add & Manage**\n- *"Add expense 500 Food"*\n- *"Log income 10000 Salary"*\n- *"Create account HDFC Bank"*\n- *"Set budget 3000 for Groceries"*\n\n**🗑️ Delete**\n- *"Delete last transaction"*\n- *"Remove Food budget"*\n- *"Close savings account"*\n\n**⚙️ Settings**\n- *"Switch to cyberpunk theme"*\n- *"Change currency to USD"*\n- *"Go to dashboard"* / *"Open settings"*\n\nWhat would you like to do?`
+    text: `### 🤖 CoinBurst AI — What I Can Do\n\n**📊 Read & Analyze**\n- *"Check my budgets"* / *"Am I over budget?"*\n- *"Analyze my expenses"* / *"Show spending"*\n- *"How are my savings?"* / *"Net cash flow"*\n- *"Show account balances"* / *"Recent transactions"*\n- *"Forecast my spending"* / *"Give me financial advice"*\n- *"Search Groceries"* / *"Find Salary"*\n\n**✏️ Add & Manage**\n- *"Add expense 500 Food"*\n- *"Log income 10000 Salary"*\n- *"Create account HDFC Bank"*\n- *"Set budget 3000 for Groceries"*\n\n**🗑️ Delete**\n- *"Delete last transaction"*\n- *"Remove Food budget"*\n- *"Close savings account"*\n\n**⚙️ Settings**\n- *"Switch to cyberpunk theme"*\n- *"Change currency to USD"*\n- *"Go to dashboard"* / *"Open settings"*\n\nWhat would you like to do?`
   };
 };
 
@@ -669,10 +809,11 @@ const MarkdownText: React.FC<{ text: string }> = ({ text }) => {
 
 // --- Main Multipage Dashboard Web Component ---
 export const DashboardWeb: React.FC<{ 
-  onNavigate: (page: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai') => void;
-  activePage: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai';
+  onNavigate: (page: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about') => void;
+  activePage: 'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about';
   onOpenForm?: () => void;
-}> = ({ onNavigate, activePage, onOpenForm }) => {
+  onEditTransaction?: (tx: Transaction) => void;
+}> = ({ onNavigate, activePage, onOpenForm, onEditTransaction }) => {
   const cStyles = useThemeStyles();
   const theme = useFinanceStore((state) => state.theme);
   const setTheme = useFinanceStore((state) => state.setTheme);
@@ -718,6 +859,7 @@ export const DashboardWeb: React.FC<{
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [confirmDeleteBudgetId, setConfirmDeleteBudgetId] = useState<string | null>(null);
 
   // Welcome popup state & effect
   const [showWelcome, setShowWelcome] = useState(false);
@@ -737,7 +879,7 @@ export const DashboardWeb: React.FC<{
           }
         }, 500);
       }
-    } catch (e) {
+    } catch {
       setShowWelcome(true);
     }
   }, []);
@@ -753,7 +895,7 @@ export const DashboardWeb: React.FC<{
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
       audio.volume = 0.4;
       audio.play().catch(e => console.log(e));
-    } catch (e) {}
+    } catch {}
   };
 
   // AI Advisor Chat State
@@ -932,7 +1074,7 @@ export const DashboardWeb: React.FC<{
   const dailyFlowData = getDailyFlowData();
 
   return (
-    <div className={`min-h-screen w-full ${cStyles.bg} font-sans transition-colors duration-500 flex flex-col md:flex-row relative overflow-hidden`}>
+    <div className={`min-h-screen w-full ${cStyles.bg} ${theme === 'forest' ? 'forest-breath' : ''} font-sans transition-colors duration-500 flex flex-col md:flex-row relative overflow-hidden`}>
       {/* ── Background Theme Animations ──────────────────────────────── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {theme === 'cyberpunk' && (
@@ -950,6 +1092,45 @@ export const DashboardWeb: React.FC<{
             {/* Flickering glow nodes */}
             <div className="absolute top-[20%] left-[30%] w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_#FFE600] animate-flicker-slow" />
             <div className="absolute bottom-[25%] right-[20%] w-3 h-3 rounded-full bg-pink-500 shadow-[0_0_10px_#FF007F] animate-flicker-slow" style={{ animationDelay: '1.5s' }} />
+          </>
+        )}
+
+        {theme === 'synthwave' && (
+          <>
+            {/* Retro perspective neon grid lines */}
+            <div 
+              className="absolute inset-0 opacity-[0.12] animate-cyber-grid" 
+              style={{
+                backgroundImage: 'linear-gradient(rgba(255, 0, 160, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 160, 0.4) 1px, transparent 1px)',
+                backgroundSize: '45px 45px',
+              }}
+            />
+            {/* Scanlines */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,5,36,0)_95%,rgba(0,0,0,0.35)_95%)] bg-[length:100%_4px] pointer-events-none opacity-40" />
+            {/* Vaporwave Glowing Orbs */}
+            <div className="absolute top-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-[#B200FF]/15 blur-[120px] animate-float-light-blob" />
+            <div className="absolute bottom-[-10%] left-[5%] w-[450px] h-[450px] rounded-full bg-[#FF007F]/15 blur-[110px] animate-float-light-blob" style={{ animationDelay: '-6s' }} />
+            {/* Drifting digital star particles */}
+            {[...Array(12)].map((_, i) => {
+              const size = Math.random() * 4 + 2;
+              const left = Math.random() * 100;
+              const delay = Math.random() * 15;
+              const duration = Math.random() * 8 + 12;
+              return (
+                <div 
+                  key={i}
+                  className="absolute bottom-[-20px] rounded-full bg-[#00E5FF] animate-float-particle"
+                  style={{
+                    width: size,
+                    height: size,
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    filter: 'blur(0.5px) drop-shadow(0 0 3px rgba(0, 229, 255, 0.6))',
+                  }}
+                />
+              );
+            })}
           </>
         )}
 
@@ -1085,7 +1266,8 @@ export const DashboardWeb: React.FC<{
               { id: 'transactions', label: 'Ledger & Entry', icon: ArrowUpRight },
               { id: 'budgets', label: 'Smart Budgets', icon: PiggyBank },
               { id: 'ai', label: 'AI Advisor', icon: Bot },
-              { id: 'settings', label: 'System Theme', icon: Settings }
+              { id: 'settings', label: 'User Theme', icon: Settings },
+              { id: 'about', label: 'About Nexus', icon: Info }
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activePage === item.id;
@@ -1175,8 +1357,9 @@ export const DashboardWeb: React.FC<{
               {activePage === 'dashboard' && 'Financial Nexus'}
               {activePage === 'transactions' && 'Vault Transaction Ledger'}
               {activePage === 'budgets' && 'Dynamic Limit Enforcers'}
-              {activePage === 'settings' && 'System Parameters'}
+               {activePage === 'settings' && 'User Settings'}
               {activePage === 'ai' && 'AI Portfolio Advisor'}
+              {activePage === 'about' && 'About Wealth Nexus'}
             </h2>
           </div>
 
@@ -1203,7 +1386,8 @@ export const DashboardWeb: React.FC<{
             transition={{ duration: 0.35, ease: 'easeInOut' }}
           >
             {activePage === 'dashboard' && (
-              <div className="space-y-8">
+              <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
+                <div className="flex-1 space-y-8 w-full">
                 {/* Account Picker */}
                 <section>
                   <div className="flex justify-between items-center mb-4">
@@ -1450,7 +1634,7 @@ export const DashboardWeb: React.FC<{
                       filteredTransactions.map((tx) => {
                         const acc = accounts.find(a => a.id === tx.accountId);
                         return (
-                          <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl transition-colors ${cStyles.ledgerFeedBg}`}>
+                          <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl transition-colors ${cStyles.ledgerFeedBg} ${theme === 'light' ? 'soft-white-row' : ''}`}>
                             <div className="flex items-center gap-4">
                               <div className={`p-2.5 rounded-xl ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
                                 {tx.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
@@ -1463,12 +1647,23 @@ export const DashboardWeb: React.FC<{
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4">
-                              <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-black font-mono mr-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
                                 {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                               </span>
-                              <button onClick={() => deleteTransaction(tx.id)} className="p-2 text-gray-500 hover:text-red-500 cursor-pointer">
-                                <Trash2 className="w-4 h-4" />
+                              <button 
+                                onClick={() => onEditTransaction?.(tx)} 
+                                className="p-2 text-gray-500 hover:text-emerald-400 cursor-pointer"
+                                title="Edit Transaction"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => deleteTransaction(tx.id)} 
+                                className="p-2 text-gray-500 hover:text-red-500 cursor-pointer"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
@@ -1478,7 +1673,10 @@ export const DashboardWeb: React.FC<{
                   </div>
                 </section>
               </div>
-            )}
+
+              <CalendarChartColumn transactions={transactions} currency={currency} />
+            </div>
+          )}
 
             {activePage === 'transactions' && (
               <div className="space-y-8">
@@ -1515,12 +1713,23 @@ export const DashboardWeb: React.FC<{
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-black font-mono mr-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
                               {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                             </span>
-                            <button onClick={() => deleteTransaction(tx.id)} className="p-2 text-gray-500 hover:text-red-500 cursor-pointer">
-                              <Trash2 className="w-4 h-4" />
+                            <button 
+                              onClick={() => onEditTransaction?.(tx)} 
+                              className="p-2 text-gray-500 hover:text-emerald-400 cursor-pointer"
+                              title="Edit Transaction"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => deleteTransaction(tx.id)} 
+                              className="p-2 text-gray-500 hover:text-red-500 cursor-pointer"
+                              title="Delete Transaction"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1569,16 +1778,33 @@ export const DashboardWeb: React.FC<{
                             <span className="text-sm font-black uppercase tracking-wider">{b.category}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-gray-400">{b.month}</span>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Delete "${b.category}" budget?`)) {
-                                    deleteBudget(b.id);
-                                  }
-                                }}
-                                className="text-gray-500 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {confirmDeleteBudgetId === b.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => {
+                                      deleteBudget(b.id);
+                                      setConfirmDeleteBudgetId(null);
+                                    }}
+                                    className="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-black hover:bg-red-500/30 transition-colors cursor-pointer"
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteBudgetId(null)}
+                                    className="text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDeleteBudgetId(b.id)}
+                                  className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                  title="Delete Budget"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                           <LiquidProgressBar spent={b.spent} limit={b.limit} />
@@ -1698,13 +1924,14 @@ export const DashboardWeb: React.FC<{
                   <h3 className="text-lg font-black mb-2">Dynamic Theme Switcher</h3>
                   <p className="text-xs text-gray-400 mb-6">Instantly swap the global user interface aesthetic with integrated audio feedback.</p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {[
                       { id: 'dark', title: 'True Dark', desc: 'AMOLED Black & neon emerald.' },
                       { id: 'light', title: 'Soft Light', desc: 'Pastel palettes & clean shadows.' },
                       { id: 'cyberpunk', title: 'Retro Cyber', desc: 'High-contrast yellow & neon pink.' },
                       { id: 'glass', title: 'Glass Synth', desc: 'Sunset gradients & glassmorphism.' },
-                      { id: 'forest', title: 'Forest Zen', desc: 'Deep evergreens & warm gold.' }
+                      { id: 'forest', title: 'Forest Zen', desc: 'Deep evergreens & warm gold.' },
+                      { id: 'synthwave', title: 'Neon Synthwave', desc: 'Vaporwave purples & glowing cyan accents.' }
                     ].map(t => (
                       <button
                         key={t.id}
@@ -1746,6 +1973,10 @@ export const DashboardWeb: React.FC<{
                   </div>
                 </div>
               </div>
+            )}
+
+            {activePage === 'about' && (
+              <AboutWeb />
             )}
 
             {activePage === 'ai' && (

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // --- Type Definitions ---
-export type ThemeType = 'dark' | 'light' | 'cyberpunk';
+export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
 export interface UserProfile {
   uid: string;

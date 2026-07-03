@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useFinanceStore, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
+import type { Transaction } from '../shared/useFinanceStore';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { X, Tag, Layers, Calendar } from 'lucide-react-native';
@@ -14,11 +15,13 @@ const { height } = Dimensions.get('window');
 interface AddTransactionMobileProps {
   sheetRef: React.RefObject<BottomSheet>;
   onClose: () => void;
+  transactionToEdit?: Transaction | null;
 }
 
-export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ sheetRef, onClose }) => {
+export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ sheetRef, onClose, transactionToEdit }) => {
   const accounts = useFinanceStore((state) => state.accounts);
   const addTransaction = useFinanceStore((state) => state.addTransaction);
+  const updateTransaction = useFinanceStore((state) => state.updateTransaction);
   const theme = useFinanceStore((state) => state.theme);
   const currency = useFinanceStore((state) => state.currency);
   const currencyDef = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
@@ -29,6 +32,25 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [category, setCategory] = useState('Food');
   const [accountId, setAccountId] = useState(accounts[0]?.id || '');
+
+  // Pre-fill fields if editing a transaction
+  React.useEffect(() => {
+    if (transactionToEdit) {
+      setDescription(transactionToEdit.description);
+      setAmount(transactionToEdit.amount.toString());
+      setType(transactionToEdit.type);
+      setCategory(transactionToEdit.category);
+      setAccountId(transactionToEdit.accountId);
+    } else {
+      setDescription('');
+      setAmount('');
+      setType('expense');
+      setCategory('Food');
+      if (accounts.length > 0) {
+        setAccountId(accounts[0].id);
+      }
+    }
+  }, [transactionToEdit, accounts]);
 
   const categories = ['Food', 'Entertainment', 'Salary', 'Rent', 'Shopping', 'Utilities', 'Travel'];
 
@@ -64,15 +86,27 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
   const handleSubmit = async () => {
     if (!description || !amount || !accountId) return;
 
-    // 1. Add Transaction to Zustand Store
-    addTransaction({
-      description,
-      amount: parseFloat(amount),
-      type,
-      category,
-      accountId,
-      date: new Date().toISOString(),
-    });
+    // 1. Add/Update Transaction in Zustand Store
+    if (transactionToEdit) {
+      updateTransaction({
+        ...transactionToEdit,
+        description,
+        amount: parseFloat(amount),
+        type,
+        category,
+        accountId,
+        date: new Date().toISOString(),
+      });
+    } else {
+      addTransaction({
+        description,
+        amount: parseFloat(amount),
+        type,
+        category,
+        accountId,
+        date: new Date().toISOString(),
+      });
+    }
 
     // 2. Trigger Expo Haptics Success (Intentional dual-pulse haptic shake)
     try {

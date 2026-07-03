@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFinanceStore, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
+import type { Transaction } from '../shared/useFinanceStore';
 import { useThemeStyles } from './DashboardWeb';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Tag, Calendar, Layers, AlertCircle } from 'lucide-react';
@@ -8,10 +9,12 @@ import confetti from 'canvas-confetti';
 export const AddTransactionWeb: React.FC<{
   onClose: () => void;
   isOpen: boolean;
-}> = ({ onClose, isOpen }) => {
+  transactionToEdit?: Transaction | null;
+}> = ({ onClose, isOpen, transactionToEdit }) => {
   const cStyles = useThemeStyles();
   const accounts = useFinanceStore((state) => state.accounts);
   const addTransaction = useFinanceStore((state) => state.addTransaction);
+  const updateTransaction = useFinanceStore((state) => state.updateTransaction);
   const currency = useFinanceStore((state) => state.currency);
 
   const currencyDef = SUPPORTED_CURRENCIES.find(c => c.code === currency) ?? SUPPORTED_CURRENCIES[0];
@@ -30,20 +33,29 @@ export const AddTransactionWeb: React.FC<{
     }
   }, [accounts, accountId]);
 
-  // Reset form when modal opens
+  // Reset or pre-fill form when modal opens or edit targets change
   useEffect(() => {
     if (isOpen) {
-      setDescription('');
-      setAmount('');
-      setType('expense');
-      setCategory('Food');
-      setDate(new Date().toISOString().substring(0, 10));
-      // Set accountId to first available account
-      if (accounts.length > 0) {
-        setAccountId(accounts[0].id);
+      if (transactionToEdit) {
+        setDescription(transactionToEdit.description);
+        setAmount(transactionToEdit.amount.toString());
+        setType(transactionToEdit.type);
+        setCategory(transactionToEdit.category);
+        setAccountId(transactionToEdit.accountId);
+        setDate(new Date(transactionToEdit.date).toISOString().substring(0, 10));
+      } else {
+        setDescription('');
+        setAmount('');
+        setType('expense');
+        setCategory('Food');
+        setDate(new Date().toISOString().substring(0, 10));
+        // Set accountId to first available account
+        if (accounts.length > 0) {
+          setAccountId(accounts[0].id);
+        }
       }
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, transactionToEdit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categories = [
     'Food', 'Entertainment', 'Salary', 'Rent', 'Shopping',
@@ -55,14 +67,26 @@ export const AddTransactionWeb: React.FC<{
     const parsedAmount = parseFloat(amount);
     if (!description.trim() || !parsedAmount || parsedAmount <= 0 || !accountId) return;
 
-    addTransaction({
-      description: description.trim(),
-      amount: parsedAmount,
-      type,
-      category,
-      accountId,
-      date: new Date(date + 'T12:00:00').toISOString(), // Use noon to avoid timezone day-shift
-    });
+    if (transactionToEdit) {
+      updateTransaction({
+        ...transactionToEdit,
+        description: description.trim(),
+        amount: parsedAmount,
+        type,
+        category,
+        accountId,
+        date: new Date(date + 'T12:00:00').toISOString(),
+      });
+    } else {
+      addTransaction({
+        description: description.trim(),
+        amount: parsedAmount,
+        type,
+        category,
+        accountId,
+        date: new Date(date + 'T12:00:00').toISOString(),
+      });
+    }
 
     // 🎉 Confetti celebration
     confetti({

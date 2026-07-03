@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate } from 'firebase/database';
 
-export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest';
+export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
 // ── Currency definitions ──────────────────────────────────────────────────────
 export interface CurrencyDefinition {
@@ -102,6 +102,7 @@ interface FinanceState {
   setUser: (user: UserProfile | null) => Promise<void>;
   setLoading: (loading: boolean) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  updateTransaction: (updatedTx: Transaction) => void;
 }
 
 const getCurrentMonthString = (dateStr?: string) => {
@@ -302,6 +303,22 @@ export const useFinanceStore = create<FinanceState>()(
       },
 
       // ── Auth / Firebase Load ──────────────────────────────────────────────────
+      updateTransaction: (updatedTx: Transaction) => {
+    const { transactions, accounts, user, theme, currency } = get();
+    const newTransactions = transactions.map(t => t.id === updatedTx.id ? updatedTx : t);
+    // Update account balance based on difference
+    const oldTx = transactions.find(t => t.id === updatedTx.id);
+    if (oldTx) {
+      const amountDiff = (updatedTx.type === 'income' ? updatedTx.amount : -updatedTx.amount) - (oldTx.type === 'income' ? oldTx.amount : -oldTx.amount);
+      const updatedAccounts = accounts.map(acc =>
+        acc.id === updatedTx.accountId ? { ...acc, balance: acc.balance + amountDiff } : acc
+      );
+      set({ transactions: newTransactions, accounts: updatedAccounts });
+      if (user) saveStateToFirebase(user.uid, updatedAccounts, newTransactions, get().budgets, theme, currency);
+    } else {
+      set({ transactions: newTransactions });
+    }
+  },
       setUser: async (user) => {
         if (user) {
           set({ user, loading: true });
@@ -310,7 +327,6 @@ export const useFinanceStore = create<FinanceState>()(
             const snapshot = await firebaseGet(dbRef);
             if (snapshot.exists()) {
               const data = snapshot.val();
-              // Merge profile data from Firebase with the auth user
               const loadedUser = { ...user };
               if (data.profile) {
                 loadedUser.displayName = data.profile.displayName || user.displayName;
@@ -326,7 +342,6 @@ export const useFinanceStore = create<FinanceState>()(
               });
               console.log('[CoinBurst] Loaded user data from Firebase.');
             } else {
-              // First ever login — initialise a fresh record in Firebase
               const freshProfile = {
                 displayName: user.displayName,
                 photoURL: user.photoURL || '',
@@ -336,7 +351,6 @@ export const useFinanceStore = create<FinanceState>()(
                 theme: 'dark',
                 currency: 'INR',
                 profile: freshProfile,
-                // Don't write accounts/transactions/budgets — Firebase drops empty arrays
               });
               set({
                 user,
@@ -354,7 +368,6 @@ export const useFinanceStore = create<FinanceState>()(
             set({ loading: false });
           }
         } else {
-          // Sign-out: clear everything from the local store
           set({
             user: null,
             accounts: [],
@@ -366,6 +379,7 @@ export const useFinanceStore = create<FinanceState>()(
           });
         }
       },
+
 
       setLoading: (loading) => set({ loading }),
 
@@ -401,10 +415,13 @@ export const useFinanceStore = create<FinanceState>()(
           removeItem: () => {},
         };
       }),
-      // Only persist theme and currency preference; ledger data always comes from Firebase
+      // Persist user preference and local ledger cache for offline / instant load on mobile
       partialize: (state) => ({
         theme: state.theme,
         currency: state.currency,
+        accounts: state.accounts,
+        transactions: state.transactions,
+        budgets: state.budgets,
       }),
     }
   )

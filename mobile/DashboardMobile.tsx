@@ -3,7 +3,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, Dimensions, 
   StyleSheet, Pressable 
 } from 'react-native';
-import { useFinanceStore, Transaction, Account, SUPPORTED_CURRENCIES, formatCurrency } from '../shared/useFinanceStore';
+import { useFinanceStore, SUPPORTED_CURRENCIES, formatCurrency } from '../shared/useFinanceStore';
+import type { Transaction, Account } from '../shared/useFinanceStore';
 import Animated, { 
   useSharedValue, useAnimatedStyle, withSpring, withTiming, 
   runOnJS 

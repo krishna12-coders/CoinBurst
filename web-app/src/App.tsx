@@ -5,10 +5,12 @@ import { AddTransactionWeb } from './components/AddTransactionWeb';
 import { auth } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
+import type { Transaction } from './shared/useFinanceStore';
 
 function App() {
-  const [activePage, setActivePage] = useState<'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai'>('dashboard');
+  const [activePage, setActivePage] = useState<'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about'>('dashboard');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const setUser = useFinanceStore((state) => state.setUser);
   const user = useFinanceStore((state) => state.user);
@@ -60,11 +62,22 @@ function App() {
       <DashboardWeb
         activePage={activePage}
         onNavigate={setActivePage}
-        onOpenForm={() => setIsFormOpen(true)}
+        onOpenForm={() => {
+          setEditingTx(null);
+          setIsFormOpen(true);
+        }}
+        onEditTransaction={(tx) => {
+          setEditingTx(tx);
+          setIsFormOpen(true);
+        }}
       />
       <AddTransactionWeb
         isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
+        transactionToEdit={editingTx}
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingTx(null);
+        }}
       />
     </div>
   );
