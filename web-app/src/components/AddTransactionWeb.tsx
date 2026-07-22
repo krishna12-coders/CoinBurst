@@ -243,17 +243,33 @@ export const AddTransactionWeb: React.FC<{
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1">
-                        <Layers className="w-3.5 h-3.5" /> Wallet
-                      </label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5" /> Wallet
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            window.dispatchEvent(new CustomEvent('coinburst_open_add_wallet'));
+                          }}
+                          className="text-[10px] text-emerald-400 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                        >
+                          + Add Wallet
+                        </button>
+                      </div>
                       <select
                         value={accountId}
                         onChange={(e) => setAccountId(e.target.value)}
                         className={`w-full px-4 py-4 rounded-xl focus:outline-none transition-all duration-300 appearance-none ${cStyles.input}`}
                       >
-                        {accounts.map((acc) => (
-                          <option key={acc.id} value={acc.id} className={cStyles.selectOptionBg}>{acc.name}</option>
-                        ))}
+                        {accounts.length === 0 ? (
+                          <option value="" disabled className={cStyles.selectOptionBg}>No Wallets - Click + Add Wallet</option>
+                        ) : (
+                          accounts.map((acc) => (
+                            <option key={acc.id} value={acc.id} className={cStyles.selectOptionBg}>{acc.name} ({acc.type})</option>
+                          ))
+                        )}
                       </select>
                     </div>
                   </div>
