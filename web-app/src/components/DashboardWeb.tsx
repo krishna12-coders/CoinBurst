@@ -8,7 +8,7 @@ import {
   BarChart, Bar
 } from 'recharts';
 import { 
-  Plus, Trash2, ArrowUpRight, ArrowDownRight, Settings, 
+  Plus, Trash2, ArrowUpRight, ArrowDownRight, Settings, Search, FileText, FileImage, FileSpreadsheet, ChevronDown, 
   TrendingUp, PiggyBank, BarChart3, LogOut, Bot, Download, Sparkles, Info, Pencil
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
@@ -294,41 +294,59 @@ const playThemeSound = (themeId: string) => {
   }
 };
 
-// CSV Statement Exporter (Downloads)
-const downloadStatement = (transactions: any[], accounts: any[]) => {
+// Multi-format Statement Exporter
+const downloadStatement = (transactions: any[], accounts: any[], format: string = 'csv') => {
   try {
-    const headers = ['Transaction ID', 'Date', 'Description', 'Type', 'Category', 'Amount', 'Account Name'];
+    const dateStr = new Date().toISOString().substring(0, 10);
+    const headers = ['Date', 'Description', 'Type', 'Category', 'Amount', 'Account'];
     const rows = transactions.map(t => {
-      const acc = accounts.find(a => a.id === t.accountId);
+      const acc = accounts.find((a: any) => a.id === t.accountId);
       return [
-        t.id,
         new Date(t.date).toLocaleString(),
-        `"${t.description.replace(/"/g, '""')}"`,
+        t.description,
         t.type,
         t.category,
         t.amount,
-        acc ? `"${acc.name.replace(/"/g, '""')}"` : 'Unknown'
+        acc ? acc.name : 'Unknown'
       ];
     });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(e => e.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    const dateStr = new Date().toISOString().substring(0, 10);
-    link.setAttribute('download', `CoinBurst_Statement_${dateStr}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (format === 'csv') {
+      const csvContent = [headers.join(','), ...rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(','))].join('\n');
+      downloadBlob(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }), 'CoinBurst_Statement_' + dateStr + '.csv');
+    } else if (format === 'json') {
+      const jsonData = transactions.map(t => { const acc = accounts.find((a: any) => a.id === t.accountId); return { date: t.date, description: t.description, type: t.type, category: t.category, amount: t.amount, account: acc?.name || 'Unknown' }; });
+      downloadBlob(new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' }), 'CoinBurst_Statement_' + dateStr + '.json');
+    } else if (format === 'txt') {
+      let txt = 'COINBURST FINANCIAL STATEMENT\n' + '='.repeat(60) + '\nGenerated: ' + new Date().toLocaleString() + '\n' + '='.repeat(60) + '\n\n';
+      rows.forEach(r => { txt += r[0] + ' | ' + r[2].toUpperCase() + ' | ' + r[3] + ' | ' + r[1] + ' | ' + r[4] + ' | ' + r[5] + '\n'; });
+      const totalInc = transactions.filter((t: any) => t.type === 'income').reduce((s: number, t: any) => s + t.amount, 0);
+      const totalExp = transactions.filter((t: any) => t.type === 'expense').reduce((s: number, t: any) => s + t.amount, 0);
+      txt += '\n' + '='.repeat(60) + '\nTotal Income: ' + totalInc + '\nTotal Expense: ' + totalExp + '\nNet: ' + (totalInc - totalExp) + '\n';
+      downloadBlob(new Blob([txt], { type: 'text/plain' }), 'CoinBurst_Statement_' + dateStr + '.txt');
+    } else if (format === 'html') {
+      let html = '<!DOCTYPE html><html><head><title>CoinBurst Statement</title><style>body{font-family:sans-serif;padding:40px;background:#0B0B0F;color:#fff}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:10px;text-align:left;border-bottom:1px solid #1E1E26}th{background:#1E1E26;color:#00FF88;text-transform:uppercase;font-size:12px;letter-spacing:2px}.income{color:#10B981}.expense{color:#EF4444}h1{background:linear-gradient(90deg,#FF007F,#00FF88,#00E5FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:28px}</style></head><body><h1>CoinBurst Statement</h1><p style="color:#9CA3AF">Generated: ' + new Date().toLocaleString() + '</p><table><tr>';
+      headers.forEach(h => { html += '<th>' + h + '</th>'; });
+      html += '</tr>';
+      rows.forEach(r => { html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="' + r[2] + '">' + r[2] + '</td><td>' + r[3] + '</td><td class="' + r[2] + '">' + (r[2] === 'income' ? '+' : '-') + r[4] + '</td><td>' + r[5] + '</td></tr>'; });
+      html += '</table></body></html>';
+      downloadBlob(new Blob([html], { type: 'text/html' }), 'CoinBurst_Statement_' + dateStr + '.html');
+    }
   } catch (err) {
     console.error("Statement download failed:", err);
   }
+};
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 // ── Markdown-to-JSX Custom Renderer ──────────────────────────────────────────
@@ -468,6 +486,14 @@ export const DashboardWeb: React.FC<{
   const [newBudgetCategory, setNewBudgetCategory] = useState('Food');
   const [newBudgetLimit, setNewBudgetLimit] = useState('');
   const [newBudgetMonth, setNewBudgetMonth] = useState(new Date().toISOString().substring(0, 7));
+
+
+  // Ledger Filters
+  const [ledgerSearch, setLedgerSearch] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [ledgerFilterType, setLedgerFilterType] = useState('all');
+  const [ledgerFilterCategory, setLedgerFilterCategory] = useState('all');
+  const [ledgerSortBy, setLedgerSortBy] = useState('date-newest');
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -648,6 +674,25 @@ export const DashboardWeb: React.FC<{
   const filteredTransactions = selectedAccountId 
     ? transactions.filter(t => t.accountId === selectedAccountId)
     : transactions;
+
+
+  const ledgerTransactions = transactions
+    .filter(t => {
+      if (!ledgerSearch) return true;
+      const q = ledgerSearch.toLowerCase();
+      return t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || String(t.amount).includes(q);
+    })
+    .filter(t => ledgerFilterType === 'all' ? true : t.type === ledgerFilterType)
+    .filter(t => ledgerFilterCategory === 'all' ? true : t.category === ledgerFilterCategory)
+    .sort((a, b) => {
+      if (ledgerSortBy === 'date-newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (ledgerSortBy === 'date-oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (ledgerSortBy === 'amount-high') return b.amount - a.amount;
+      if (ledgerSortBy === 'amount-low') return a.amount - b.amount;
+      return 0;
+    });
+
+  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)));
 
   const totalBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
   const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
@@ -1169,20 +1214,70 @@ export const DashboardWeb: React.FC<{
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-black">Full Transactions Vault Ledger</h3>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => downloadStatement(transactions, accounts)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
-                      >
-                        <Download className="w-4 h-4" /> Download CSV
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowExportMenu(!showExportMenu)}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                        >
+                          <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showExportMenu && (
+                          <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl z-50 overflow-hidden ${cStyles.cardBg} ${cStyles.shadow}`}>
+                            {[
+                              { label: 'CSV Spreadsheet', icon: '📊', format: 'csv' },
+                              { label: 'JSON Data', icon: '🔧', format: 'json' },
+                              { label: 'Text Report', icon: '📄', format: 'txt' },
+                              { label: 'HTML Document', icon: '🌐', format: 'html' },
+                            ].map(opt => (
+                              <button
+                                key={opt.format}
+                                onClick={() => { downloadStatement(ledgerTransactions, accounts, opt.format); setShowExportMenu(false); }}
+                                className={`w-full text-left px-4 py-3 text-xs font-bold hover:bg-white/10 transition-colors flex items-center gap-2 cursor-pointer`}
+                              >
+                                <span>{opt.icon}</span> {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <button onClick={onOpenForm} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}>
                         <Plus className="w-4 h-4" /> Add Transaction
                       </button>
                     </div>
                   </div>
 
+
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Search transactions..."
+                      value={ledgerSearch}
+                      onChange={e => setLedgerSearch(e.target.value)}
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm ${cStyles.input}`}
+                    />
+                  </div>
+
+                  <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <select value={ledgerFilterType} onChange={e => setLedgerFilterType(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                      <option value="all">All Types</option>
+                      <option value="income">Income</option>
+                      <option value="expense">Expense</option>
+                    </select>
+                    <select value={ledgerFilterCategory} onChange={e => setLedgerFilterCategory(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                      <option value="all">All Categories</option>
+                      {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <select value={ledgerSortBy} onChange={e => setLedgerSortBy(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                      <option value="date-newest">Date: Newest</option>
+                      <option value="date-oldest">Date: Oldest</option>
+                      <option value="amount-high">Amount: High to Low</option>
+                      <option value="amount-low">Amount: Low to High</option>
+                    </select>
+                  </div>
+
                   <div className="space-y-3">
-                    {transactions.map((tx) => {
+                    {ledgerTransactions.map((tx) => {
                       const acc = accounts.find(a => a.id === tx.accountId);
                       return (
                         <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl ${cStyles.ledgerFeedBg}`}>

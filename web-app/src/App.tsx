@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardWeb } from './components/DashboardWeb';
 import { LandingPage } from './components/LandingPage';
 import { AddTransactionWeb } from './components/AddTransactionWeb';
 import { Layout } from './pages/Layout';
 import { Dashboard } from './pages/Dashboard';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { auth } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
@@ -14,6 +15,7 @@ function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const setUser = useFinanceStore((state) => state.setUser);
   const user = useFinanceStore((state) => state.user);
   
@@ -33,6 +35,7 @@ function App() {
         
         // Boot up systems
         processRecurringTransactions();
+        setShowWelcome(true);
       } else {
         await setUser(null);
       }
@@ -66,6 +69,12 @@ function App() {
   return (
     <BrowserRouter>
       <div className="w-full min-h-screen">
+        {showWelcome && (
+          <WelcomeScreen
+            userName={user.displayName || user.email || 'Explorer'}
+            onComplete={() => setShowWelcome(false)}
+          />
+        )}
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />

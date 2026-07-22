@@ -118,12 +118,7 @@ export const AboutWeb: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Decorative Signature */}
-      <motion.div variants={itemVariants} className="text-center pt-4">
-        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold flex items-center justify-center gap-1">
-          Designed by Antigravity <Sparkles size={10} className="text-amber-400" /> Version 2.4.0
-        </p>
-      </motion.div>
+
     </motion.div>
   );
 };

@@ -25,7 +25,36 @@ export const generateAIResponse = async (
   }
 ): Promise<AIResult> => {
   if (!ai) {
-    return { text: `⚠️ **API Key Missing!** Please add \`VITE_GEMINI_API_KEY\` to your \`.env\` file in the \`web-app\` directory to activate the AI Advisor.` };
+    const textLower = message.toLowerCase();
+    
+    // Demo Mode Logic
+    if (textLower.includes('add') && textLower.includes('transaction')) {
+      const demoAccount = state.accounts[0];
+      if (!demoAccount) return { text: `[DEMO MODE] I would add a transaction, but you have no accounts!` };
+      return {
+        text: `[DEMO MODE] Added a sample transaction for you!`,
+        action: () => store.addTransaction({
+          accountId: demoAccount.id,
+          type: 'expense',
+          category: 'Demo',
+          amount: 50,
+          description: 'Demo Transaction',
+          date: new Date().toISOString()
+        })
+      };
+    } else if (textLower.includes('theme') || textLower.includes('cyberpunk') || textLower.includes('light')) {
+      return {
+        text: `[DEMO MODE] Switching theme...`,
+        action: () => store.setTheme(textLower.includes('light') ? 'light' : 'cyberpunk')
+      };
+    } else if (textLower.includes('navigate') || textLower.includes('go to')) {
+      return {
+        text: `[DEMO MODE] Navigating to dashboard...`,
+        action: () => store.onNavigate('dashboard')
+      };
+    }
+    
+    return { text: `[DEMO MODE] I received your message: "${message}".\n\n*Note: To enable the full Gemini 2.5 Flash intelligence, please provide a \`VITE_GEMINI_API_KEY\` in your environment variables.*` };
   }
 
   // Define tools
@@ -109,7 +138,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: message,
       config: {
         tools: tools,
@@ -151,7 +180,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
       }
       else if (call.name === 'set_budget') {
         const now = new Date();
-        const month = \`\${now.getFullYear()}-\${String(now.getMonth() + 1).padStart(2, '0')}\`;
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         action = () => store.addBudget({ category: args.category, limit: args.limit, month });
         if (!replyText) replyText = `✅ Sentinel protocol activated: **${args.category}** limited to ${formatAmount(args.limit, currency)}.`;
       }
@@ -169,9 +198,10 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
 
     return { text: response.text || "I processed your request, but I didn't have anything to say." };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Engine Error:", error);
-    return { text: `⚠️ **Communication Failure**: Unable to reach the AI core. Please check your API key and connection.` };
+    const errMsg = error?.message || error?.toString() || 'Unknown error';
+    return { text: `⚠️ **Communication Failure**: ${errMsg}\n\nPlease verify your API key is a valid Gemini API key (starts with \`AIza...\`). You can get one free at [Google AI Studio](https://aistudio.google.com/apikey).` };
   }
 };
 
@@ -179,6 +209,6 @@ const formatAmount = (amount: number, currency: string) => {
   try {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
   } catch (e) {
-    return \`\${currency} \${amount}\`;
+    return `${currency} ${amount}`;
   }
 };

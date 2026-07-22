@@ -273,7 +273,7 @@ export const useFinanceStore = create<FinanceState>()(
       // ── Budgets ──────────────────────────────────────────────────────────────
       addBudget: (budgetData) => {
         const id = 'bud_' + Math.random().toString(36).substring(2, 9);
-        const newBudget: Budget = { ...budgetData, id, spent: 0 };
+        const newBudget: Budget = { ...budgetData, assigned: (budgetData as any).assigned || 0, id, spent: 0 };
         const updatedBudgets = [...get().budgets, newBudget];
         set({ budgets: updatedBudgets });
 
@@ -291,6 +291,71 @@ export const useFinanceStore = create<FinanceState>()(
 
       // ── Selection ─────────────────────────────────────────────────────────────
       setSelectedAccountId: (id) => set({ selectedAccountId: id }),
+
+
+      addXP: (amount) => {
+        set((state) => {
+          const newXP = state.xp + amount;
+          const nextLevelXP = state.level * 1000;
+          if (newXP >= nextLevelXP) {
+            return { xp: newXP - nextLevelXP, level: state.level + 1 };
+          }
+          return { xp: newXP };
+        });
+      },
+      
+      checkStreak: () => {
+        const today = new Date().toISOString().split('T')[0];
+        set((state) => {
+          if (state.lastActiveDate === today) return state;
+          
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (state.lastActiveDate === yesterdayStr) {
+            return { streakDays: state.streakDays + 1, lastActiveDate: today };
+          } else {
+            return { streakDays: 1, lastActiveDate: today };
+          }
+        });
+      },
+      
+      processRecurringTransactions: () => {
+        const { transactions, addTransaction } = get();
+        const now = new Date();
+        
+        const recurring = transactions.filter(t => t.isRecurring && t.isRecurring !== 'none' && t.nextRecurrenceDate);
+        
+        recurring.forEach(tx => {
+          const nextDate = new Date(tx.nextRecurrenceDate!);
+          if (now >= nextDate) {
+            addTransaction({
+              accountId: tx.accountId,
+              type: tx.type,
+              category: tx.category,
+              amount: tx.amount,
+              description: tx.description + ' (Auto-Recurring)',
+              date: nextDate.toISOString(),
+            });
+            
+            const newNext = new Date(nextDate);
+            if (tx.isRecurring === 'daily') newNext.setDate(newNext.getDate() + 1);
+            else if (tx.isRecurring === 'weekly') newNext.setDate(newNext.getDate() + 7);
+            else if (tx.isRecurring === 'monthly') newNext.setMonth(newNext.getMonth() + 1);
+            
+            set(state => ({
+              transactions: state.transactions.map(t => t.id === tx.id ? { ...t, nextRecurrenceDate: newNext.toISOString() } : t)
+            }));
+          }
+        });
+      },
+
+      transferToBudget: (budgetId, amount) => {
+        set((state) => ({
+          budgets: state.budgets.map(b => b.id === budgetId ? { ...b, assigned: (b.assigned || 0) + amount } : b)
+        }));
+      },
 
       syncData: (data) => {
         set((state) => ({

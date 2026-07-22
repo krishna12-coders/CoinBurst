@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useFinanceStore } from '../../shared/useFinanceStore';
-import { signOutUser } from '../../shared/firebase';
+import { useFinanceStore } from '../shared/useFinanceStore';
+import { signOutUser } from "../shared/firebase";
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BarChart3, ArrowUpRight, PiggyBank, Bot, Settings, Info, LogOut 
@@ -37,10 +37,10 @@ export const Layout: React.FC = () => {
       {/* Sidebar */}
       <aside className={`
         fixed top-0 bottom-0 left-0 z-50 w-64 border-r
-        \${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'}
-        flex flex-col justify-between \${cStyles.cardBg}
+        ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'}
+        flex flex-col justify-between ${cStyles.cardBg}
         transition-transform duration-300 ease-in-out
-        \${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:static md:z-10 md:h-screen
       `}>
         <div>
@@ -77,9 +77,9 @@ export const Layout: React.FC = () => {
                     navigate(item.id);
                     setIsMobileSidebarOpen(false);
                   }}
-                  className={\`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer \${
+                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 cursor-pointer ${
                     isActive ? cStyles.navActive : cStyles.navInactive
-                  }\`}
+                  }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -116,7 +116,7 @@ export const Layout: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className={\`md:hidden flex items-center justify-between px-4 py-3 border-b \${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} \${cStyles.cardBg} sticky top-0 z-20 w-full\`}>
+        <div className={`md:hidden flex items-center justify-between px-4 py-3 border-b ${theme === 'cyberpunk' ? 'border-[#FF007F]' : 'border-gray-800'} ${cStyles.cardBg} sticky top-0 z-20 w-full`}>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
