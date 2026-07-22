@@ -7,7 +7,7 @@ import { useFinanceStore, formatCurrency } from '../shared/useFinanceStore';
 import { getThemeColors } from '../theme/colors';
 
 export const TransactionsScreen: React.FC = () => {
-  const { transactions, accounts, addTransaction, deleteTransaction, theme, currency } = useFinanceStore();
+  const { transactions, accounts, addTransaction, deleteTransaction, addAccount, theme, currency } = useFinanceStore();
   const c = getThemeColors(theme);
   const fmt = (val: number) => formatCurrency(val, currency);
 
@@ -17,7 +17,7 @@ export const TransactionsScreen: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date-newest' | 'date-oldest' | 'amount-high' | 'amount-low'>('date-newest');
 
-  // Modal State
+  // Transaction Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -25,7 +25,16 @@ export const TransactionsScreen: React.FC = () => {
   const [category, setCategory] = useState('Food');
   const [accountId, setAccountId] = useState(accounts[0]?.id || '');
 
+  // Add Wallet Modal State
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [newWalletName, setNewWalletName] = useState('');
+  const [newWalletType, setNewWalletType] = useState<'cash' | 'bank' | 'credit'>('bank');
+  const [newWalletBalance, setNewWalletBalance] = useState('');
+  const [newWalletColor, setNewWalletColor] = useState('#00FF88');
+
   const categories = ['Food', 'Bills', 'Shopping', 'Salary', 'Investment', 'Entertainment', 'Transport', 'Other'];
+  const walletTypes: ('cash' | 'bank' | 'credit')[] = ['bank', 'cash', 'credit'];
+  const walletColors = ['#00FF88', '#00E5FF', '#FF007F', '#FFE600', '#A855F7', '#F97316'];
   const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)));
 
   // Computed & filtered transactions
@@ -39,7 +48,7 @@ export const TransactionsScreen: React.FC = () => {
     .filter(t => filterCategory === 'all' ? true : t.category === filterCategory)
     .sort((a, b) => {
       if (sortBy === 'date-newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (sortBy === 'date-oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === 'date-oldest') return new Date(a.date).getTime() - new Date(a.date).getTime();
       if (sortBy === 'amount-high') return b.amount - a.amount;
       if (sortBy === 'amount-low') return a.amount - b.amount;
       return 0;
@@ -51,7 +60,7 @@ export const TransactionsScreen: React.FC = () => {
     }
     const targetAccountId = accountId || accounts[0]?.id;
     if (!targetAccountId) {
-      return Alert.alert('No Account', 'Please create an account first.');
+      return Alert.alert('No Account', 'Please create a wallet first.');
     }
 
     addTransaction({
@@ -68,12 +77,37 @@ export const TransactionsScreen: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const handleCreateWallet = () => {
+    if (!newWalletName.trim()) {
+      return Alert.alert('Invalid Input', 'Please enter a wallet name.');
+    }
+    const balanceNum = parseFloat(newWalletBalance) || 0;
+    addAccount({
+      name: newWalletName.trim(),
+      type: newWalletType,
+      balance: balanceNum,
+      color: newWalletColor,
+    });
+    setNewWalletName('');
+    setNewWalletBalance('');
+    setIsWalletModalOpen(false);
+    Alert.alert('Success', `Wallet "${newWalletName.trim()}" created successfully!`);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerLabel, { color: c.textMuted }]}>LEDGER FEED</Text>
-        <Text style={[styles.headerTitle, { color: c.text }]}>Transactions</Text>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={[styles.headerLabel, { color: c.textMuted }]}>LEDGER FEED</Text>
+          <Text style={[styles.headerTitle, { color: c.text }]}>Transactions</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setIsWalletModalOpen(true)}
+          style={[styles.addWalletBtnHeader, { backgroundColor: c.accent + '20', borderColor: c.accent }]}
+        >
+          <Text style={[styles.addWalletBtnText, { color: c.accent }]}>+ Add Wallet</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search Input */}
@@ -223,6 +257,43 @@ export const TransactionsScreen: React.FC = () => {
               onChangeText={setAmount}
             />
 
+            {/* Wallet Selection with + Add Wallet Link */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.label, { color: c.textMuted }]}>Wallet Account</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsModalOpen(false);
+                  setIsWalletModalOpen(true);
+                }}
+              >
+                <Text style={{ color: c.accent, fontSize: 12, fontWeight: 'bold' }}>+ Add Wallet</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginVertical: 8 }}>
+              {accounts.length === 0 ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsModalOpen(false);
+                    setIsWalletModalOpen(true);
+                  }}
+                  style={[styles.chip, { backgroundColor: c.accent }]}
+                >
+                  <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 11 }}>+ Create First Wallet</Text>
+                </TouchableOpacity>
+              ) : (
+                accounts.map(acc => (
+                  <TouchableOpacity
+                    key={acc.id}
+                    onPress={() => setAccountId(acc.id)}
+                    style={[styles.chip, { backgroundColor: (accountId || accounts[0]?.id) === acc.id ? c.accent : c.input }]}
+                  >
+                    <Text style={{ color: (accountId || accounts[0]?.id) === acc.id ? '#000' : c.text, fontWeight: 'bold', fontSize: 11 }}>{acc.name}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
             <Text style={[styles.label, { color: c.textMuted }]}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginVertical: 8 }}>
               {categories.map(cat => (
@@ -248,15 +319,82 @@ export const TransactionsScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Add Wallet Modal */}
+      <Modal visible={isWalletModalOpen} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: c.card, borderColor: c.cardBorder }]}>
+            <Text style={[styles.modalTitle, { color: c.text }]}>Add New Wallet</Text>
+
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: c.input, color: c.text }]}
+              placeholder="Wallet Name (e.g. HDFC Bank, Cash)"
+              placeholderTextColor={c.textMuted}
+              value={newWalletName}
+              onChangeText={setNewWalletName}
+            />
+
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: c.input, color: c.text }]}
+              placeholder="Initial Balance ($)"
+              placeholderTextColor={c.textMuted}
+              keyboardType="numeric"
+              value={newWalletBalance}
+              onChangeText={setNewWalletBalance}
+            />
+
+            <Text style={[styles.label, { color: c.textMuted }]}>Account Type</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}>
+              {walletTypes.map(type => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setNewWalletType(type)}
+                  style={[styles.typeBtn, { backgroundColor: newWalletType === type ? c.accent : c.input }]}
+                >
+                  <Text style={{ color: newWalletType === type ? '#000' : c.text, fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' }}>
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.label, { color: c.textMuted }]}>Theme Tag Color</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginVertical: 10 }}>
+              {walletColors.map(color => (
+                <TouchableOpacity
+                  key={color}
+                  onPress={() => setNewWalletColor(color)}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: color, borderWidth: newWalletColor === color ? 3 : 0, borderColor: '#fff' }
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setIsWalletModalOpen(false)} style={[styles.actionBtn, { backgroundColor: c.input }]}>
+                <Text style={{ color: c.textMuted, fontWeight: 'bold' }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleCreateWallet} style={[styles.actionBtn, { backgroundColor: c.accent }]}>
+                <Text style={{ color: '#000', fontWeight: 'bold' }}>Create Wallet</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16 },
-  header: { paddingTop: 16, paddingBottom: 8 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, paddingBottom: 8 },
   headerLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 3, textTransform: 'uppercase' },
   headerTitle: { fontSize: 28, fontWeight: '900', marginTop: 4 },
+  addWalletBtnHeader: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  addWalletBtnText: { fontSize: 11, fontWeight: '800' },
   searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginVertical: 8 },
   searchInput: { flex: 1, fontSize: 14 },
   filterRow: { marginVertical: 4 },
@@ -278,6 +416,9 @@ const styles = StyleSheet.create({
   toggleBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
   modalInput: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: 12 },
   label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  typeBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
+  colorDot: { width: 28, height: 28, borderRadius: 14 },
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 16 },
   actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
 });
