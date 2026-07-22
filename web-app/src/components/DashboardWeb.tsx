@@ -890,15 +890,24 @@ export const DashboardWeb: React.FC<{
             </h2>
           </div>
 
-          <div className={`flex items-center gap-4 p-2 rounded-xl border ${cStyles.headerAccent}`}>
-            <div className="text-right">
-              <span className="text-[10px] text-gray-400 block uppercase tracking-widest">Aggregate Net Worth</span>
-              <span className="text-xl font-mono font-black text-emerald-400">
-                {fmt(totalBalance)}
-              </span>
-            </div>
-            <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
-              <TrendingUp className="w-5 h-5" />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowAddAccount(true)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+              title="Create New Wallet Node"
+            >
+              <Plus className="w-4 h-4" /> Add Wallet
+            </button>
+            <div className={`flex items-center gap-4 p-2 rounded-xl border ${cStyles.headerAccent}`}>
+              <div className="text-right">
+                <span className="text-[10px] text-gray-400 block uppercase tracking-widest">Aggregate Net Worth</span>
+                <span className="text-xl font-mono font-black text-emerald-400">
+                  {fmt(totalBalance)}
+                </span>
+              </div>
+              <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-400">
+                <TrendingUp className="w-5 h-5" />
+              </div>
             </div>
           </div>
         </header>
@@ -1402,6 +1411,49 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'settings' && (
               <div className="space-y-8">
+                {/* 0. Wallet Nodes & Accounts Panel */}
+                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                      <h3 className="text-lg font-black tracking-wide">Wallet Nodes & Accounts</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Manage your financial accounts, balances, and color tags.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowAddAccount(true)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                    >
+                      <Plus className="w-4 h-4" /> Add Wallet
+                    </button>
+                  </div>
+
+                  {accounts.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 text-sm font-semibold">
+                      No wallet nodes configured. Click "Add Wallet" above to create your first account.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {accounts.map((acc) => (
+                        <div key={acc.id} className={`p-4 rounded-xl border flex items-center justify-between ${cStyles.ledgerFeedBg}`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
+                            <div>
+                              <h4 className="font-bold text-sm">{acc.name}</h4>
+                              <span className="text-[10px] text-gray-400 uppercase font-bold">{acc.type} • {fmt(acc.balance)}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => deleteAccount(acc.id)}
+                            className="p-1.5 text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+                            title="Delete Wallet"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* 1. Profile Settings Panel */}
                 <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
                   <h3 className="text-lg font-black mb-1">User Profile Settings</h3>
