@@ -1133,26 +1133,26 @@ export const DashboardWeb: React.FC<{
                 </section>
 
                 {/* Ledger Feed */}
-                <section className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-black tracking-wide">Activity Ledger Feed</h3>
-                    <div className="flex gap-2">
+                <section className={`p-4 sm:p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h3 className="text-base sm:text-lg font-black tracking-wide">Activity Ledger Feed</h3>
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => downloadStatement(filteredTransactions, accounts)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
                       >
                         <Download className="w-4 h-4" /> Statement
                       </button>
                       <button 
                         onClick={onOpenForm}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}
                       >
                         <Plus className="w-4 h-4" /> Add Transaction
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                     {filteredTransactions.length === 0 ? (
                       <div className="text-center py-12 text-gray-500 text-sm font-semibold">
                         No transactions tracked for this scope.
@@ -1161,37 +1161,39 @@ export const DashboardWeb: React.FC<{
                       filteredTransactions.map((tx) => {
                         const acc = accounts.find(a => a.id === tx.accountId);
                         return (
-                          <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl transition-colors ${cStyles.ledgerFeedBg} ${theme === 'light' ? 'soft-white-row' : ''}`}>
-                            <div className="flex items-center gap-4">
-                              <div className={`p-2.5 rounded-xl ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
-                                {tx.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                          <div key={tx.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-xl gap-3 transition-colors ${cStyles.ledgerFeedBg} ${theme === 'light' ? 'soft-white-row' : ''}`}>
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                              <div className={`p-2.5 rounded-xl shrink-0 ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
+                                {tx.type === 'income' ? <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5" />}
                               </div>
-                              <div>
-                                <h4 className="font-bold text-sm">{tx.description}</h4>
-                                <div className="flex items-center gap-2 mt-1">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-sm truncate">{tx.description}</h4>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                   <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${cStyles.badgeBg}`}>{tx.category}</span>
-                                  {acc && <span className="text-[10px] font-bold" style={{ color: acc.color }}>• {acc.name}</span>}
+                                  {acc && <span className="text-[10px] font-bold truncate" style={{ color: acc.color }}>• {acc.name}</span>}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm font-black font-mono mr-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                            <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-800/30">
+                              <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
                                 {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                               </span>
-                              <button 
-                                onClick={() => onEditTransaction?.(tx)} 
-                                className="p-2 text-gray-500 hover:text-emerald-400 cursor-pointer"
-                                title="Edit Transaction"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button 
-                                onClick={() => deleteTransaction(tx.id)} 
-                                className="p-2 text-gray-500 hover:text-red-500 cursor-pointer"
-                                title="Delete Transaction"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button 
+                                  onClick={() => onEditTransaction?.(tx)} 
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                                  title="Edit Transaction"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => deleteTransaction(tx.id)} 
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors"
+                                  title="Delete Transaction"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1207,14 +1209,14 @@ export const DashboardWeb: React.FC<{
 
             {activePage === 'transactions' && (
               <div className="space-y-8">
-                <div className={`p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-black">Full Transactions Vault Ledger</h3>
-                    <div className="flex gap-2">
-                      <div className="relative">
+                <div className={`p-4 sm:p-6 rounded-2xl ${cStyles.cardBg} ${cStyles.shadow}`}>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h3 className="text-base sm:text-lg font-black">Full Transactions Vault Ledger</h3>
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                      <div className="relative flex-1 sm:flex-none">
                         <button
                           onClick={() => setShowExportMenu(!showExportMenu)}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
+                          className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
                         >
                           <Download className="w-4 h-4" /> Export <ChevronDown className="w-3 h-3" />
                         </button>
@@ -1237,7 +1239,7 @@ export const DashboardWeb: React.FC<{
                           </div>
                         )}
                       </div>
-                      <button onClick={onOpenForm} className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}>
+                      <button onClick={onOpenForm} className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtn}`}>
                         <Plus className="w-4 h-4" /> Add Transaction
                       </button>
                     </div>
@@ -1255,17 +1257,17 @@ export const DashboardWeb: React.FC<{
                     />
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <select value={ledgerFilterType} onChange={e => setLedgerFilterType(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                    <select value={ledgerFilterType} onChange={e => setLedgerFilterType(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
                       <option value="all">All Types</option>
                       <option value="income">Income</option>
                       <option value="expense">Expense</option>
                     </select>
-                    <select value={ledgerFilterCategory} onChange={e => setLedgerFilterCategory(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                    <select value={ledgerFilterCategory} onChange={e => setLedgerFilterCategory(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
                       <option value="all">All Categories</option>
                       {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <select value={ledgerSortBy} onChange={e => setLedgerSortBy(e.target.value)} className={`p-2 rounded-xl text-sm ${cStyles.input}`}>
+                    <select value={ledgerSortBy} onChange={e => setLedgerSortBy(e.target.value)} className={`p-2.5 rounded-xl text-sm ${cStyles.input}`}>
                       <option value="date-newest">Date: Newest</option>
                       <option value="date-oldest">Date: Oldest</option>
                       <option value="amount-high">Amount: High to Low</option>
@@ -1277,37 +1279,39 @@ export const DashboardWeb: React.FC<{
                     {ledgerTransactions.map((tx) => {
                       const acc = accounts.find(a => a.id === tx.accountId);
                       return (
-                        <div key={tx.id} className={`flex items-center justify-between p-4 rounded-xl ${cStyles.ledgerFeedBg}`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2.5 rounded-xl ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
-                              {tx.type === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                        <div key={tx.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-xl gap-3 transition-colors ${cStyles.ledgerFeedBg}`}>
+                          <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                            <div className={`p-2.5 rounded-xl shrink-0 ${tx.type === 'income' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-pink-500/10 text-pink-500'}`}>
+                              {tx.type === 'income' ? <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5" />}
                             </div>
-                            <div>
-                              <h4 className="font-bold text-sm">{tx.description}</h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-[10px] px-2 py-0.5 rounded uppercase ${cStyles.badgeBg}`}>{tx.category}</span>
-                                {acc && <span className="text-[10px] font-bold" style={{ color: acc.color }}>• {acc.name}</span>}
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-sm truncate">{tx.description}</h4>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${cStyles.badgeBg}`}>{tx.category}</span>
+                                {acc && <span className="text-[10px] font-bold truncate" style={{ color: acc.color }}>• {acc.name}</span>}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-black font-mono mr-2 ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
+                          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-800/30">
+                            <span className={`text-sm font-black font-mono ${tx.type === 'income' ? 'text-emerald-400' : 'text-pink-500'}`}>
                               {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount)}
                             </span>
-                            <button 
-                              onClick={() => onEditTransaction?.(tx)} 
-                              className="p-2 text-gray-500 hover:text-emerald-400 cursor-pointer"
-                              title="Edit Transaction"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button 
-                              onClick={() => deleteTransaction(tx.id)} 
-                              className="p-2 text-gray-500 hover:text-red-500 cursor-pointer"
-                              title="Delete Transaction"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => onEditTransaction?.(tx)} 
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
+                                title="Edit Transaction"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => deleteTransaction(tx.id)} 
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer transition-colors"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
