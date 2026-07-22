@@ -1228,12 +1228,6 @@ export const DashboardWeb: React.FC<{
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <h3 className="text-base sm:text-lg font-black">Full Transactions Vault Ledger</h3>
                     <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                      <button
-                        onClick={() => setShowAddAccount(true)}
-                        className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${cStyles.primaryBtnOutline}`}
-                      >
-                        <Plus className="w-4 h-4" /> Add Wallet
-                      </button>
                       <div className="relative flex-1 sm:flex-none">
                         <button
                           onClick={() => setShowExportMenu(!showExportMenu)}
