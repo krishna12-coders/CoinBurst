@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Dimensions, KeyboardAvoidingView, Platform 
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Dimensions, KeyboardAvoidingView, Platform
 } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useFinanceStore, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
@@ -156,16 +156,16 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
       backgroundStyle={{ backgroundColor: sheetBg, borderWidth: theme === 'cyberpunk' ? 2 : 0, borderColor: cardBorder }}
       handleIndicatorStyle={{ backgroundColor: isDark ? '#374151' : '#D1D5DB' }}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <View style={styles.contentContainer}>
-          
+
           {/* Sheet Header */}
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: textColor }]}>Record Transaction</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => sheetRef.current?.close()}
               style={styles.closeBtn}
             >
@@ -236,8 +236,8 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
             {/* Quick selectors for Category */}
             <View style={styles.fieldGroup}>
               <Text style={[styles.fieldLabel, { color: textMuted }]}>Category</Text>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.categoryScrollView}
               >
@@ -251,7 +251,7 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
                     ]}
                   >
                     <Text style={[
-                      styles.categoryTagText, 
+                      styles.categoryTagText,
                       { color: category === cat ? '#FFFFFF' : textColor }
                     ]}>
                       {cat}
@@ -271,9 +271,9 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
                     onPress={() => setAccountId(acc.id)}
                     style={[
                       styles.accountSelectPill,
-                      { 
+                      {
                         borderColor: accountId === acc.id ? acc.color : cardBorder,
-                        backgroundColor: accountId === acc.id ? `${acc.color}15` : inputBg 
+                        backgroundColor: accountId === acc.id ? `${acc.color}15` : inputBg
                       }
                     ]}
                   >
@@ -290,7 +290,7 @@ export const AddTransactionMobile: React.FC<AddTransactionMobileProps> = ({ shee
             <TouchableOpacity
               onPress={handleSubmit}
               style={[
-                styles.submitBtn, 
+                styles.submitBtn,
                 { backgroundColor: theme === 'cyberpunk' ? '#FFE600' : '#10B981' }
               ]}
             >

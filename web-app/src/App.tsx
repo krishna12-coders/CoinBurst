@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardWeb } from './components/DashboardWeb';
 import { LandingPage } from './components/LandingPage';
 import { AddTransactionWeb } from './components/AddTransactionWeb';
+import { Layout } from './pages/Layout';
+import { Dashboard } from './pages/Dashboard';
 import { auth } from './shared/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
 import type { Transaction } from './shared/useFinanceStore';
 
 function App() {
-  const [activePage, setActivePage] = useState<'dashboard' | 'transactions' | 'budgets' | 'settings' | 'ai' | 'about'>('dashboard');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const setUser = useFinanceStore((state) => state.setUser);
   const user = useFinanceStore((state) => state.user);
+  
+  // Gamification + Recurring Backend Boot
+  const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -25,15 +30,17 @@ function App() {
           photoURL: firebaseUser.photoURL || undefined,
           selectedTheme: useFinanceStore.getState().theme,
         });
+        
+        // Boot up systems
+        processRecurringTransactions();
       } else {
         await setUser(null);
       }
       setAuthReady(true);
     });
     return () => unsubscribe();
-  }, [setUser]);
+  }, [setUser, processRecurringTransactions]);
 
-  // Show a loading spinner while Firebase Auth resolves the session
   if (!authReady) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#07050F]">
@@ -52,34 +59,36 @@ function App() {
     );
   }
 
-  // Route based on auth state
   if (!user) {
     return <LandingPage />;
   }
 
   return (
-    <div className="w-full min-h-screen">
-      <DashboardWeb
-        activePage={activePage}
-        onNavigate={setActivePage}
-        onOpenForm={() => {
-          setEditingTx(null);
-          setIsFormOpen(true);
-        }}
-        onEditTransaction={(tx) => {
-          setEditingTx(tx);
-          setIsFormOpen(true);
-        }}
-      />
-      <AddTransactionWeb
-        isOpen={isFormOpen}
-        transactionToEdit={editingTx}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingTx(null);
-        }}
-      />
-    </div>
+    <BrowserRouter>
+      <div className="w-full min-h-screen">
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            {/* Map legacy routes back into DashboardWeb which acts as a sub-router container */}
+            <Route path="transactions" element={<DashboardWeb activePage="transactions" onNavigate={() => {}} onOpenForm={() => { setIsFormOpen(true); setEditingTx(null); }} onEditTransaction={(tx) => { setEditingTx(tx); setIsFormOpen(true); }} />} />
+            <Route path="budgets" element={<DashboardWeb activePage="budgets" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+            <Route path="settings" element={<DashboardWeb activePage="settings" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+            <Route path="ai" element={<DashboardWeb activePage="ai" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+            <Route path="about" element={<DashboardWeb activePage="about" onNavigate={() => {}} onOpenForm={() => {}} onEditTransaction={() => {}} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+        
+        <AddTransactionWeb
+          isOpen={isFormOpen}
+          transactionToEdit={editingTx}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingTx(null);
+          }}
+        />
+      </div>
+    </BrowserRouter>
   );
 }
 
