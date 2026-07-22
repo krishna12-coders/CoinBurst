@@ -141,7 +141,7 @@ Format your responses using Markdown. Be concise, helpful, and adopt a sleek, sl
       model: 'gemini-2.0-flash',
       contents: message,
       config: {
-        tools: tools,
+        tools: tools as any,
         systemInstruction: systemInstruction,
         temperature: 0.2,
       }

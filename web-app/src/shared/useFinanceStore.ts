@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { database } from './firebase';
 import { ref, set as firebaseSet, get as firebaseGet, update as firebaseUpdate } from 'firebase/database';
+import { triggerHaptic, triggerHapticNotification, showNativeToast } from './nativeBridge';
 
 export type ThemeType = 'dark' | 'light' | 'cyberpunk' | 'glass' | 'forest' | 'synthwave';
 
@@ -62,6 +63,9 @@ export interface Transaction {
   amount: number;
   description: string;
   date: string;
+  isRecurring?: boolean;
+  recurrenceFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  nextRecurrenceDate?: string;
 }
 
 export interface Budget {
@@ -69,6 +73,7 @@ export interface Budget {
   category: string;
   limit: number;
   spent: number;
+  assigned?: number;
   month: string;
 }
 
@@ -81,6 +86,10 @@ interface FinanceState {
   selectedAccountId: string | null;
   user: UserProfile | null;
   loading: boolean;
+  xp: number;
+  level: number;
+  streakDays: number;
+  lastActiveDate: string;
 
   setCurrency: (currency: string) => void;
   setTheme: (theme: ThemeType) => void;
@@ -103,6 +112,10 @@ interface FinanceState {
   setLoading: (loading: boolean) => void;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateTransaction: (updatedTx: Transaction) => void;
+  addXP?: (amount: number) => void;
+  checkStreak?: () => void;
+  processRecurringTransactions?: () => void;
+  allocateBudgetAmount?: (budgetId: string, amount: number) => void;
 }
 
 const getCurrentMonthString = (dateStr?: string) => {
@@ -156,6 +169,10 @@ export const useFinanceStore = create<FinanceState>()(
       selectedAccountId: null,
       user: null,
       loading: false,
+      xp: 0,
+      level: 1,
+      streakDays: 0,
+      lastActiveDate: '',
 
       // ── Currency ──────────────────────────────────────────────────────────────
       setCurrency: (currency) => {
@@ -199,6 +216,9 @@ export const useFinanceStore = create<FinanceState>()(
 
         const updatedTransactions = [newTransaction, ...transactions];
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
+        triggerHaptic('medium');
+        triggerHapticNotification('success');
+        showNativeToast('Transaction saved');
 
         const { user } = get();
         if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);
@@ -234,6 +254,8 @@ export const useFinanceStore = create<FinanceState>()(
 
         const updatedTransactions = transactions.filter((t) => t.id !== id);
         set({ transactions: updatedTransactions, accounts: updatedAccounts, budgets: updatedBudgets });
+        triggerHaptic('heavy');
+        showNativeToast('Transaction deleted');
 
         const { user } = get();
         if (user) saveStateToFirebase(user.uid, updatedAccounts, updatedTransactions, updatedBudgets, theme, currency);
@@ -325,7 +347,7 @@ export const useFinanceStore = create<FinanceState>()(
         const { transactions, addTransaction } = get();
         const now = new Date();
         
-        const recurring = transactions.filter(t => t.isRecurring && t.isRecurring !== 'none' && t.nextRecurrenceDate);
+        const recurring = transactions.filter(t => t.isRecurring && t.nextRecurrenceDate);
         
         recurring.forEach(tx => {
           const nextDate = new Date(tx.nextRecurrenceDate!);
@@ -340,9 +362,11 @@ export const useFinanceStore = create<FinanceState>()(
             });
             
             const newNext = new Date(nextDate);
-            if (tx.isRecurring === 'daily') newNext.setDate(newNext.getDate() + 1);
-            else if (tx.isRecurring === 'weekly') newNext.setDate(newNext.getDate() + 7);
-            else if (tx.isRecurring === 'monthly') newNext.setMonth(newNext.getMonth() + 1);
+            const freq = tx.recurrenceFrequency || 'monthly';
+            if (freq === 'daily') newNext.setDate(newNext.getDate() + 1);
+            else if (freq === 'weekly') newNext.setDate(newNext.getDate() + 7);
+            else if (freq === 'monthly') newNext.setMonth(newNext.getMonth() + 1);
+            else if (freq === 'yearly') newNext.setFullYear(newNext.getFullYear() + 1);
             
             set(state => ({
               transactions: state.transactions.map(t => t.id === tx.id ? { ...t, nextRecurrenceDate: newNext.toISOString() } : t)
@@ -351,7 +375,7 @@ export const useFinanceStore = create<FinanceState>()(
         });
       },
 
-      transferToBudget: (budgetId, amount) => {
+      transferToBudget: (budgetId: string, amount: number) => {
         set((state) => ({
           budgets: state.budgets.map(b => b.id === budgetId ? { ...b, assigned: (b.assigned || 0) + amount } : b)
         }));

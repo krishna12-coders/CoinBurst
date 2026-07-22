@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardWeb } from './components/DashboardWeb';
 import { LandingPage } from './components/LandingPage';
@@ -11,6 +11,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useFinanceStore } from './shared/useFinanceStore';
 import type { Transaction } from './shared/useFinanceStore';
 
+import { initNativeListeners, updateNativeStatusBar } from './shared/nativeBridge';
+
 function App() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -18,9 +20,18 @@ function App() {
   const [showWelcome, setShowWelcome] = useState(false);
   const setUser = useFinanceStore((state) => state.setUser);
   const user = useFinanceStore((state) => state.user);
+  const theme = useFinanceStore((state) => state.theme);
   
   // Gamification + Recurring Backend Boot
   const processRecurringTransactions = useFinanceStore(state => state.processRecurringTransactions);
+
+  useEffect(() => {
+    initNativeListeners();
+  }, []);
+
+  useEffect(() => {
+    updateNativeStatusBar(theme);
+  }, [theme]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -34,7 +45,7 @@ function App() {
         });
         
         // Boot up systems
-        processRecurringTransactions();
+        processRecurringTransactions?.();
         setShowWelcome(true);
       } else {
         await setUser(null);

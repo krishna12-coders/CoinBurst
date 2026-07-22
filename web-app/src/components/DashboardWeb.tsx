@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useFinanceStore, formatCurrency, SUPPORTED_CURRENCIES } from '../shared/useFinanceStore';
 import type { ThemeType, Transaction } from '../shared/useFinanceStore';
-import { signOutUser } from '../shared/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts';
 import { 
-  Plus, Trash2, ArrowUpRight, ArrowDownRight, Settings, Search, FileText, FileImage, FileSpreadsheet, ChevronDown, 
-  TrendingUp, PiggyBank, BarChart3, LogOut, Bot, Download, Sparkles, Info, Pencil
+  Plus, Trash2, ArrowUpRight, ArrowDownRight, Search, ChevronDown, 
+  TrendingUp, PiggyBank, Bot, Download, Sparkles, Pencil
 } from 'lucide-react';
 import { generateAIResponse } from '../utils/aiCommandEngine';
 import { AboutWeb } from './AboutWeb';
@@ -495,8 +494,6 @@ export const DashboardWeb: React.FC<{
   const [ledgerFilterCategory, setLedgerFilterCategory] = useState('all');
   const [ledgerSortBy, setLedgerSortBy] = useState('date-newest');
 
-  // Mobile sidebar drawer state
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [confirmDeleteBudgetId, setConfirmDeleteBudgetId] = useState<string | null>(null);
 
   // Welcome popup state & effect

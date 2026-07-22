@@ -1,22 +1,20 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFinanceStore, formatCurrency } from '../shared/useFinanceStore';
 
 import { ResponsivePie } from '@nivo/pie';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Brush } from 'recharts';
-import { PieChart, Calendar as CalendarIcon, Activity, ArrowUpRight, ArrowDownRight, X } from 'lucide-react';
-import { TrendingUp, Trophy, Flame, Star } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { PieChart, Calendar as CalendarIcon, Activity, ArrowUpRight, ArrowDownRight, X, TrendingUp } from 'lucide-react';
 import { useThemeStyles } from '../components/DashboardWeb';
 
 export const Dashboard: React.FC = () => {
-  const { transactions, accounts, xp, level, streakDays, checkStreak, currency } = useFinanceStore();
+  const { transactions, accounts, checkStreak, currency } = useFinanceStore();
   const cStyles = useThemeStyles();
 
   // Run streak check on mount
   useEffect(() => {
-    checkStreak();
+    checkStreak?.();
   }, [checkStreak]);
 
   const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
@@ -55,10 +53,6 @@ export const Dashboard: React.FC = () => {
     currentBalance += d.amount;
     return { date: d.date, balance: currentBalance };
   });
-
-  // Gamification XP Progress
-  const currentLevelXP = level * 1000;
-  const xpPercentage = (xp / currentLevelXP) * 100;
 
     return (
     <div className="space-y-6">

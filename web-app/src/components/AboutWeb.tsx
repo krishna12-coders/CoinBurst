@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Palette, Sparkles, Code, Cpu } from 'lucide-react';
+import { ShieldCheck, Palette, Code, Cpu } from 'lucide-react';
 import { useThemeStyles } from './DashboardWeb';
 
 export const AboutWeb: React.FC = () => {
